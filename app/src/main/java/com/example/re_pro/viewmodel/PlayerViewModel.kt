@@ -81,6 +81,7 @@ class PlayerViewModel @Inject constructor(
     private var unshuffledQueue: List<Song> = emptyList()
     private var activeEqPreset: EqualizerPreset? = null
     private var loadQueueJob: Job? = null
+    private var positionTrackerJob: Job? = null
 
     init {
         initPlayerListeners()
@@ -111,6 +112,7 @@ class PlayerViewModel @Inject constructor(
         exoPlayer.addListener(object : Player.Listener {
             override fun onIsPlayingChanged(isPlaying: Boolean) {
                 _uiState.update { it.copy(isPlaying = isPlaying) }
+                if (isPlaying) startPositionTracker() else positionTrackerJob?.cancel()
             }
 
             override fun onPlaybackStateChanged(playbackState: Int) {
@@ -175,14 +177,15 @@ class PlayerViewModel @Inject constructor(
     }
 
     private fun startPositionTracker() {
-        viewModelScope.launch {
-            while (true) {
-                if (_uiState.value.isPlaying) {
+        positionTrackerJob?.cancel()
+        if (_uiState.value.isPlaying) {
+            positionTrackerJob = viewModelScope.launch {
+                while (true) {
                     val pos = exoPlayer.currentPosition.coerceAtLeast(0L)
                     _uiState.update { it.copy(currentPositionMs = pos) }
                     playbackStateHolder.update { it.copy(currentPositionMs = pos) }
+                    delay(100)
                 }
-                delay(100)
             }
         }
     }
