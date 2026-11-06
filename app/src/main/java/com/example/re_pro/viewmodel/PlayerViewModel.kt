@@ -415,7 +415,7 @@ class PlayerViewModel @Inject constructor(
                 clipData = ClipData.newUri(context.contentResolver, s.title, s.uri)
                 putExtra(Intent.EXTRA_STREAM, s.uri)
                 putExtra(Intent.EXTRA_SUBJECT, s.title)
-                putExtra(Intent.EXTRA_TEXT, "Escuchando \"${s.title}\" de ${s.artist} en Re-Pro")
+                putExtra(Intent.EXTRA_TEXT, "Escuchando \"${s.title}\" de ${s.artist} en Rewind 1137")
                 addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION or Intent.FLAG_ACTIVITY_NEW_TASK)
             }
             val chooser = Intent.createChooser(shareIntent, "Compartir canción")

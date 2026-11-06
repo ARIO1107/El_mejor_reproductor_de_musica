@@ -47,7 +47,7 @@ fun TopBarRePro(
             ) {
                 Image(
                     painter = painterResource(id = R.drawable.ic_launcher_foreground),
-                    contentDescription = "Re-Pro Logo",
+                    contentDescription = "Rewind 1137 Logo",
                     contentScale = ContentScale.Fit,
                     modifier = Modifier.fillMaxSize()
                 )
@@ -56,7 +56,7 @@ fun TopBarRePro(
         Spacer(modifier = Modifier.width(12.dp))
         Column(modifier = Modifier.weight(1f)) {
             Text(
-                text = "Re-Pro",
+                text = "Rewind 1137",
                 fontSize = 26.sp,
                 fontWeight = FontWeight.Black,
                 color = MaterialTheme.colorScheme.onBackground,

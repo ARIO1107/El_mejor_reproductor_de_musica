@@ -191,7 +191,7 @@ object SpotifyAuthManager {
             conn.requestMethod = "GET"
             conn.connectTimeout = 8000
             conn.readTimeout = 8000
-            conn.setRequestProperty("User-Agent", "Mozilla/5.0 (Linux; Android 13; Re-Pro)")
+            conn.setRequestProperty("User-Agent", "Mozilla/5.0 (Linux; Android 13; Rewind 1137)")
             headers.forEach { (k, v) -> conn.setRequestProperty(k, v) }
             val code = conn.responseCode
             val stream = if (code in 200..299) conn.inputStream else conn.errorStream

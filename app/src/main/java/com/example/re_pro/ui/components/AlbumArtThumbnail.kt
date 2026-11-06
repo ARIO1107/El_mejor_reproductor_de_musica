@@ -94,7 +94,7 @@ fun AlbumArtThumbnail(
         if (showBadge) {
             Image(
                 painter = painterResource(id = R.drawable.ic_piranha_logo),
-                contentDescription = "Re-Pro Badge",
+                contentDescription = "Rewind 1137 Badge",
                 modifier = Modifier
                     .size(size * 0.35f)
                     .align(Alignment.BottomStart)

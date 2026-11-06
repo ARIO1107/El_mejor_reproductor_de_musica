@@ -71,7 +71,7 @@ private fun WidgetContentCompact(
             verticalAlignment = Alignment.CenterVertically
         ) {
             Text(
-                text = if (hasSong) songTitle else "Re-Pro",
+                text = if (hasSong) songTitle else "Rewind 1137",
                 maxLines = 1,
                 style = TextStyle(
                     fontSize = 13.sp,

@@ -70,7 +70,7 @@ class MainActivity : ComponentActivity() {
                 AlertDialog(
                     onDismissRequest = { },
                     title = {
-                        Text("Re-Pro se cerro (detalles del fallo)", fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onBackground)
+                        Text("Rewind 1137 se cerro (detalles del fallo)", fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onBackground)
                     },
                     text = {
                         Text(

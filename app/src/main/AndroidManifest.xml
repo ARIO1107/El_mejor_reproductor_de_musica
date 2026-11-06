@@ -59,7 +59,7 @@
         <service
             android:name=".service.AndroidAutoMediaBrowserService"
             android:exported="true"
-            android:label="Re-Pro">
+            android:label="Rewind 1137">
             <intent-filter>
                 <action android:name="android.media.browse.MediaBrowserService" />
             </intent-filter>

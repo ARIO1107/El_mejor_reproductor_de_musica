@@ -426,7 +426,7 @@ private companion object {
                 requestMethod = "GET"
                 connectTimeout = 6000
                 readTimeout = 8000
-                setRequestProperty("User-Agent", "Re-Pro/2.0 (Android music player)")
+                setRequestProperty("User-Agent", "Rewind 1137/2.0 (Android music player)")
                 setRequestProperty("Accept", "application/json")
             }
             val code = connection.responseCode

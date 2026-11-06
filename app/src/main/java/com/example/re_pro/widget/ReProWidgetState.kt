@@ -7,7 +7,7 @@ import com.example.re_pro.viewmodel.PlaybackStateHolder
 
 object ReProWidgetState {
     @Volatile
-    var songTitle: String = "Re-Pro"
+    var songTitle: String = "Rewind 1137"
 
     @Volatile
     var songArtist: String = "Tu musica, tu estilo"
@@ -38,7 +38,7 @@ object ReProWidgetState {
 
     fun refresh(player: ExoPlayer) {
         val metadata = player.currentMediaItem?.mediaMetadata
-        songTitle = metadata?.title?.toString()?.takeIf { it.isNotBlank() } ?: "Re-Pro"
+        songTitle = metadata?.title?.toString()?.takeIf { it.isNotBlank() } ?: "Rewind 1137"
         songArtist = metadata?.artist?.toString()?.takeIf { it.isNotBlank() } ?: "Tu musica, tu estilo"
         songAlbum = metadata?.albumTitle?.toString()?.takeIf { it.isNotBlank() } ?: ""
         isPlaying = player.isPlaying
@@ -50,7 +50,7 @@ object ReProWidgetState {
     fun refresh(state: PlaybackStateHolder.State) {
         val song = state.filteredSongs.firstOrNull { it.id == state.currentSongId }
             ?: state.filteredSongs.getOrNull(state.currentSongIndex)
-        songTitle = song?.title?.takeIf { it.isNotBlank() } ?: "Re-Pro"
+        songTitle = song?.title?.takeIf { it.isNotBlank() } ?: "Rewind 1137"
         songArtist = song?.artist?.takeIf { it.isNotBlank() } ?: "Tu musica, tu estilo"
         songAlbum = song?.album?.takeIf { it.isNotBlank() } ?: ""
         isPlaying = state.isPlaying

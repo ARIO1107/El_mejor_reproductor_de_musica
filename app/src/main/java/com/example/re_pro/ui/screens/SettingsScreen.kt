@@ -300,11 +300,11 @@ fun SettingsScreen(
                 onClick = { showClearCacheDialog = true }
             )
 
-            SettingsSectionHeader(title = "Acerca de Re-Pro")
+            SettingsSectionHeader(title = "Acerca de Rewind 1137")
             SettingsClickableItem(
                 icon = Icons.Outlined.Info,
                 title = "Versión de la App",
-                subtitle = "Re-Pro v2.0 (Edición Comercial)",
+                subtitle = "Rewind 1137 v2.0 (Edición Comercial)",
                 onClick = {}
             )
 
@@ -348,7 +348,7 @@ fun SettingsScreen(
                 title = { Text("Licencias de Software", fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onBackground) },
                 text = {
                     Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                        Text("Re-Pro utiliza tecnologías de código abierto:", color = MaterialTheme.colorScheme.onBackground)
+                        Text("Rewind 1137 utiliza tecnologías de código abierto:", color = MaterialTheme.colorScheme.onBackground)
                         Text("• Android Jetpack Compose (Apache 2.0)", color = MaterialTheme.colorScheme.onBackground)
                         Text("• AndroidX Media3 ExoPlayer (Apache 2.0)", color = MaterialTheme.colorScheme.onBackground)
                         Text("• Jetpack DataStore Preferences (Apache 2.0)", color = MaterialTheme.colorScheme.onBackground)

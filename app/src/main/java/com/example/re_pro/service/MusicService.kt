@@ -58,7 +58,7 @@ class MusicService : MediaSessionService() {
 
     companion object {
         const val CHANNEL_ID = "repro_media_channel"
-        const val CHANNEL_NAME = "Re-Pro Media Controller"
+        const val CHANNEL_NAME = "Rewind 1137 Media Controller"
         const val NOTIFICATION_ID = 1001
 
         const val ACTION_PLAY_PAUSE = "ACTION_PLAY_PAUSE"
@@ -167,10 +167,10 @@ class MusicService : MediaSessionService() {
             ?: uiState.filteredSongs.getOrNull(uiState.currentSongIndex)
         val albumArt = loadAlbumArt(activeSong)
 
-        remoteViews.setTextViewText(R.id.notification_title, activeSong?.title ?: "Re-Pro")
+        remoteViews.setTextViewText(R.id.notification_title, activeSong?.title ?: "Rewind 1137")
         remoteViews.setTextViewText(R.id.notification_artist, activeSong?.artist ?: "")
 
-        expandedViews.setTextViewText(R.id.notification_expanded_title, activeSong?.title ?: "Re-Pro")
+        expandedViews.setTextViewText(R.id.notification_expanded_title, activeSong?.title ?: "Rewind 1137")
         expandedViews.setTextViewText(R.id.notification_expanded_artist, activeSong?.artist ?: "")
         expandedViews.setTextViewText(R.id.notification_expanded_album, activeSong?.album ?: "")
 
@@ -293,7 +293,7 @@ class MusicService : MediaSessionService() {
 
         return NotificationCompat.Builder(this, CHANNEL_ID)
             .setSmallIcon(R.mipmap.ic_launcher_round)
-            .setContentTitle(activeSong?.title ?: "Re-Pro")
+            .setContentTitle(activeSong?.title ?: "Rewind 1137")
             .setContentText(activeSong?.artist ?: "Música")
             .setSubText(activeSong?.album)
             .setLargeIcon(albumArt)
@@ -476,7 +476,7 @@ class MusicService : MediaSessionService() {
                 CHANNEL_NAME,
                 NotificationManager.IMPORTANCE_LOW
             ).apply {
-                description = "Control de reproducción de música Re-Pro"
+                description = "Control de reproducción de música Rewind 1137"
                 setShowBadge(false)
             }
             val notificationManager = getSystemService(NOTIFICATION_SERVICE) as NotificationManager

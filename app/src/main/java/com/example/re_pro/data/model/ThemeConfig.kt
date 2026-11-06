@@ -60,7 +60,7 @@ enum class AppThemeMode(
     ),
     PASTEL_BLUE_PIRANHA(
         title = "Piraña Azul Frío",
-        description = "Azul profundo inspirado en el pez piraña oficial de Re-Pro",
+        description = "Azul profundo inspirado en el pez piraña oficial de Rewind 1137",
         category = ThemeCategory.NIGHT
     ),
     NORDIC_FROST(

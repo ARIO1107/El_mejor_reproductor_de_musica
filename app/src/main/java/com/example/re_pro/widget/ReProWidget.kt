@@ -71,7 +71,7 @@ private fun WidgetContentMedium(
             verticalAlignment = Alignment.CenterVertically
         ) {
             Text(
-                text = "REPRO",
+                text = "REWIND 1137",
                 style = TextStyle(
                     fontSize = 11.sp,
                     fontWeight = FontWeight.Bold,
@@ -108,7 +108,7 @@ private fun WidgetContentMedium(
             Spacer(GlanceModifier.width(12.dp))
             Column(modifier = GlanceModifier.defaultWeight()) {
                 Text(
-                    text = if (hasSong) songTitle else "Toca para abrir Re-Pro",
+                    text = if (hasSong) songTitle else "Toca para abrir Rewind 1137",
                     maxLines = 1,
                     style = TextStyle(
                         fontSize = 16.sp,

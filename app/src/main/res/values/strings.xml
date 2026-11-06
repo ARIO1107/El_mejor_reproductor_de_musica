@@ -1,5 +1,5 @@
 <resources>
-    <string name="app_name">Re-Pro</string>
+    <string name="app_name">Rewind 1137</string>
     <string name="shortcut_play_last">Reproducir</string>
     <string name="shortcut_play_last_long">Reproducir última canción</string>
     <string name="shortcut_shuffle">Aleatorio</string>
@@ -39,7 +39,7 @@
     <string name="queue_save_as_playlist">Guardar cola como lista</string>
     <string name="queue_playlist_name_label">Nombre de la lista</string>
 
-    <string name="widget_media_desc">Controla la reproducción de Re-Pro</string>
-    <string name="widget_compact_desc">Re-Pro: canción actual</string>
-    <string name="widget_large_desc">Re-Pro: reproductor grande</string>
+    <string name="widget_media_desc">Controla la reproducción de Rewind 1137</string>
+    <string name="widget_compact_desc">Rewind 1137: canción actual</string>
+    <string name="widget_large_desc">Rewind 1137: reproductor grande</string>
 </resources>
