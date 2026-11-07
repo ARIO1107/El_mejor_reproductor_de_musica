@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <color name="widget_background">#FF16131E</color>
+    <color name="widget_text">#FFF4F1F8</color>
+    <color name="widget_subtext">#FFA9A0BD</color>
+    <color name="widget_green">#FF57D9A3</color>
+    <color name="widget_accent">#FFB388FE</color>
+    <color name="widget_card">#FF242030</color>
+    <color name="widget_pill">#FF322B45</color>
+    <color name="widget_pill_pressed">#FF3E365A</color>
+    <color name="widget_pill_primary">#FF7C4DFF</color>
+    <color name="widget_art_bg">#FF2A2538</color>
+    <color name="launch_window_bg">#FF0A0C10</color>
+</resources>
