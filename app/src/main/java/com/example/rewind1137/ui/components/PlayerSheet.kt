@@ -1007,7 +1007,7 @@ fun PlayerSheet(
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.SpaceEvenly
+                horizontalArrangement = Arrangement.Center
             ) {
 val favScale = remember { Animatable(1f) }
                 LaunchedEffect(isFavorite) {
@@ -1150,7 +1150,7 @@ imageVector = when (playbackMode) {
 
             Row(
                 modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceEvenly
+                horizontalArrangement = Arrangement.Center
             ) {
                 IconButton(
                     onClick = onAddToPlaylistClick,
