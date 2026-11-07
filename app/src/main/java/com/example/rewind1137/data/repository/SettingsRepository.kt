@@ -39,6 +39,8 @@ class SettingsRepository(private val context: Context) {
         val EQUALIZER_PRESETS_JSON = stringPreferencesKey("equalizer_presets_json")
         val ACTIVE_EQUALIZER_PRESET_ID = stringPreferencesKey("active_equalizer_preset_id")
         val EQUALIZER_ENABLED = booleanPreferencesKey("equalizer_enabled")
+        val BASS_BOOST_ENABLED = booleanPreferencesKey("bass_boost_enabled")
+        val VIRTUALIZER_ENABLED = booleanPreferencesKey("virtualizer_enabled")
         val RECENT_SEARCHES = stringPreferencesKey("recent_searches_json")
         val ALBUM_ART_MODE = stringPreferencesKey("album_art_mode")
         val NOW_PLAYING_ANIMATION = stringPreferencesKey("now_playing_animation")
@@ -62,6 +64,8 @@ class SettingsRepository(private val context: Context) {
         val replayGainEnabled = preferences[PreferencesKeys.REPLAY_GAIN_ENABLED] ?: false
         val replayGainPreamp = preferences[PreferencesKeys.REPLAY_GAIN_PREAMP] ?: 1.0f
         val eqEnabled = preferences[PreferencesKeys.EQUALIZER_ENABLED] ?: true
+        val bassBoostEnabled = preferences[PreferencesKeys.BASS_BOOST_ENABLED] ?: false
+        val virtualizerEnabled = preferences[PreferencesKeys.VIRTUALIZER_ENABLED] ?: false
         val albumArtModeString = preferences[PreferencesKeys.ALBUM_ART_MODE] ?: AlbumArtMode.STATIC.name
         val albumArtMode = try {
             AlbumArtMode.valueOf(albumArtModeString)
@@ -88,6 +92,8 @@ class SettingsRepository(private val context: Context) {
             replayGainEnabled = replayGainEnabled,
             replayGainPreamp = replayGainPreamp,
             equalizerEnabled = eqEnabled,
+            bassBoostEnabled = bassBoostEnabled,
+            virtualizerEnabled = virtualizerEnabled,
             albumArtMode = albumArtMode,
             nowPlayingAnimation = nowPlayingAnimation
         )
@@ -303,6 +309,18 @@ class SettingsRepository(private val context: Context) {
     suspend fun setEqualizerEnabled(enabled: Boolean) {
         context.dataStore.edit { preferences ->
             preferences[PreferencesKeys.EQUALIZER_ENABLED] = enabled
+        }
+    }
+
+    suspend fun setBassBoostEnabled(enabled: Boolean) {
+        context.dataStore.edit { preferences ->
+            preferences[PreferencesKeys.BASS_BOOST_ENABLED] = enabled
+        }
+    }
+
+    suspend fun setVirtualizerEnabled(enabled: Boolean) {
+        context.dataStore.edit { preferences ->
+            preferences[PreferencesKeys.VIRTUALIZER_ENABLED] = enabled
         }
     }
 

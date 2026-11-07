@@ -595,9 +595,9 @@ class PlayerViewModel @Inject constructor(
                         audioEffectManager.applyPreset(preset)
                     }
                     audioEffectManager.setEqualizerEnabled(settings.equalizerEnabled)
-                    audioEffectManager.setBassBoostEnabled(settings.equalizerEnabled)
-                    audioEffectManager.setVirtualizerEnabled(settings.equalizerEnabled)
-                    _uiState.update { it.copy(isEqualizerEnabled = settings.equalizerEnabled) }
+                    audioEffectManager.setBassBoostEnabled(settings.bassBoostEnabled)
+                    audioEffectManager.setVirtualizerEnabled(settings.virtualizerEnabled)
+                    _uiState.update { it.copy(isEqualizerEnabled = settings.equalizerEnabled, isBassBoostEnabled = settings.bassBoostEnabled) }
                 } catch (e: Exception) {
                     Log.e("PlayerViewModel", "Failed to restore EQ preset", e)
                 }
@@ -609,15 +609,18 @@ class PlayerViewModel @Inject constructor(
         audioEffectManager.setEqualizerEnabled(enabled)
         audioEffectManager.setBassBoostEnabled(enabled)
         audioEffectManager.setVirtualizerEnabled(enabled)
-        _uiState.update { it.copy(isEqualizerEnabled = enabled) }
+        _uiState.update { it.copy(isEqualizerEnabled = enabled, isBassBoostEnabled = enabled) }
         viewModelScope.launch {
             settingsRepository.setEqualizerEnabled(enabled)
+            settingsRepository.setBassBoostEnabled(enabled)
+            settingsRepository.setVirtualizerEnabled(enabled)
         }
     }
 
     fun toggleBassBoost(enabled: Boolean) {
         audioEffectManager.setBassBoostEnabled(enabled)
         _uiState.update { it.copy(isBassBoostEnabled = enabled) }
+        viewModelScope.launch { settingsRepository.setBassBoostEnabled(enabled) }
     }
 
     fun setBassBoostStrength(strength: Int) = audioEffectManager.setBassBoostStrength(strength)

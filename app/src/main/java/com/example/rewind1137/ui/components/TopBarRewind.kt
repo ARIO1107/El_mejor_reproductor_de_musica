@@ -38,7 +38,7 @@ fun TopBarRewind(
     ) {
         Column(modifier = Modifier.weight(1f)) {
             Text(
-                text = "1137",
+                text = "Rewind 1137",
                 fontSize = 44.sp,
                 fontFamily = FontFamily(Font(R.font.rewind_gothic)),
                 fontWeight = FontWeight.Bold,

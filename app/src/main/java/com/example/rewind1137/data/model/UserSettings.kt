@@ -16,6 +16,8 @@ data class UserSettings(
     val replayGainEnabled: Boolean = false,
     val replayGainPreamp: Float = 1.0f,
     val equalizerEnabled: Boolean = true,
+    val bassBoostEnabled: Boolean = false,
+    val virtualizerEnabled: Boolean = false,
     val albumArtMode: AlbumArtMode = AlbumArtMode.STATIC,
     val nowPlayingAnimation: NowPlayingAnimation = NowPlayingAnimation.BARS
 )

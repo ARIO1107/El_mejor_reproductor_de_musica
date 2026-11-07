@@ -32,7 +32,6 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.rewind1137.audio.AudioEffectManager
 import com.example.rewind1137.data.model.EqualizerPreset
-import com.example.rewind1137.ui.components.DynamicBackground
 import com.example.rewind1137.ui.components.GlassmorphicContainer
 
 @OptIn(ExperimentalMaterial3Api::class)
