@@ -2,6 +2,8 @@ package com.example.rewind1137
 
 import android.Manifest
 import android.content.BroadcastReceiver
+import android.content.ClipData
+import android.content.ClipboardManager
 import android.content.Context
 import android.content.Intent
 import android.content.IntentFilter
@@ -81,6 +83,15 @@ class MainActivity : ComponentActivity() {
                             modifier = Modifier
                                 .verticalScroll(rememberScrollState())
                         )
+                    },
+                    dismissButton = {
+                        TextButton(onClick = {
+                            val clipboard = this.getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
+                            clipboard.setPrimaryClip(ClipData.newPlainText("Rewind 1137 - Diagnostico", crashLog))
+                            showCrashReport = false
+                        }) {
+                            Text("Copiar diagnóstico")
+                        }
                     },
                     confirmButton = {
                         TextButton(onClick = {
