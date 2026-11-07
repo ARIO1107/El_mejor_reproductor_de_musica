@@ -1,7 +1,0 @@
-<?xml version="1.0" encoding="utf-8"?>
-<resources>
-
-    <style name="Theme.RePro" parent="android:Theme.Material.NoActionBar">
-        <item name="android:windowBackground">@color/launch_window_bg</item>
-    </style>
-</resources>

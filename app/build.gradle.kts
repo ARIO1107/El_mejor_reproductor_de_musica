@@ -6,13 +6,13 @@ plugins {
 }
 
 android {
-    namespace = "com.example.re_pro"
+    namespace = "com.example.rewind1137"
     compileSdk {
         version = release(37)
     }
 
     defaultConfig {
-        applicationId = "com.example.re_pro"
+        applicationId = "com.example.rewind1137"
         minSdk = 24
         targetSdk = 37
         versionCode = 2
@@ -30,9 +30,9 @@ android {
     signingConfigs {
         create("release") {
             storeFile = rootProject.file("keystore/re-pro-release.jks")
-            storePassword = providers.gradleProperty("REPRO_KEYSTORE_PASSWORD").orNull
-            keyAlias = providers.gradleProperty("REPRO_KEYSTORE_ALIAS").getOrElse("re-pro")
-            keyPassword = providers.gradleProperty("REPRO_KEYSTORE_KEY_PASSWORD").orNull
+            storePassword = providers.gradleProperty("REWIND_KEYSTORE_PASSWORD").getOrElse("rePro2026")
+            keyAlias = providers.gradleProperty("REWIND_KEYSTORE_ALIAS").getOrElse("re-pro")
+            keyPassword = providers.gradleProperty("REWIND_KEYSTORE_KEY_PASSWORD").getOrElse("rePro2026")
         }
     }
     buildTypes {
