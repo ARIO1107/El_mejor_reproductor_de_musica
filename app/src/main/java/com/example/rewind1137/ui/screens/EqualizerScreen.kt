@@ -3,6 +3,7 @@ package com.example.rewind1137.ui.screens
 import android.net.Uri
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.Canvas
+import androidx.compose.foundation.background
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
@@ -138,8 +139,8 @@ fun EqualizerScreen(
         }
     }
 
-    Box(modifier = Modifier.fillMaxSize()) {
-        DynamicBackground(albumArtUri = albumArtUri)
+    Box(modifier = Modifier.fillMaxSize().background(MaterialTheme.colorScheme.background)) {
+
 
         Scaffold(
             topBar = {
