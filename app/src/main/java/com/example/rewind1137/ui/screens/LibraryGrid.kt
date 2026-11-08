@@ -377,24 +377,26 @@ private fun LibraryHeader(
                         accent = accent,
                         onClick = onToggleView
                     )
-                    SegmentedTool(
-                        icon = Icons.Default.ViewStream,
-                        label = "Compacto",
-                        selected = !isGridView && compactList,
-                        containerColor = containerColor,
-                        accent = accent,
-                        onClick = onCompactListChange,
-                        enabled = !isGridView
-                    )
-                    SegmentedTool(
-                        icon = null,
-                        label = "${gridColumns}C",
-                        selected = isGridView,
-                        containerColor = containerColor,
-                        accent = accent,
-                        onClick = onGridColumnsChange,
-                        enabled = isGridView
-                    )
+                    if (!isGridView) {
+                        SegmentedTool(
+                            icon = Icons.Default.ViewStream,
+                            label = "Compacto",
+                            selected = compactList,
+                            containerColor = containerColor,
+                            accent = accent,
+                            onClick = onCompactListChange
+                        )
+                    }
+                    if (isGridView) {
+                        SegmentedTool(
+                            icon = null,
+                            label = "${gridColumns}C",
+                            selected = true,
+                            containerColor = containerColor,
+                            accent = accent,
+                            onClick = onGridColumnsChange
+                        )
+                    }
                     Box {
                         SegmentedTool(
                             icon = Icons.AutoMirrored.Filled.Sort,
