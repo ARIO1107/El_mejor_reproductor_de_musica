@@ -308,9 +308,10 @@ private fun LibraryHeader(
         modifier = Modifier
             .fillMaxWidth()
             .padding(start = 6.dp, end = 6.dp, top = 8.dp, bottom = 4.dp),
+        horizontalArrangement = Arrangement.SpaceBetween,
         verticalAlignment = Alignment.CenterVertically
     ) {
-        Column(modifier = Modifier.weight(1f)) {
+        Column {
             Text(
                 text = "Tu Biblioteca",
                 fontSize = 21.sp,
@@ -323,15 +324,7 @@ private fun LibraryHeader(
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )
         }
-    }
 
-    Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(start = 4.dp, end = 4.dp, top = 4.dp, bottom = 8.dp),
-        horizontalArrangement = Arrangement.spacedBy(8.dp),
-        verticalAlignment = Alignment.CenterVertically
-    ) {
         Surface(
             modifier = Modifier.weight(1f),
             shape = RoundedCornerShape(14.dp),
@@ -453,7 +446,7 @@ private fun LibraryFilters(
         modifier = Modifier
             .fillMaxWidth()
             .horizontalScroll(rememberScrollState())
-            .padding(top = 6.dp, bottom = 6.dp),
+            .padding(top = 6.dp, bottom = 10.dp),
         horizontalArrangement = Arrangement.spacedBy(8.dp)
     ) {
         LibraryFilter.entries.forEach { filter ->
