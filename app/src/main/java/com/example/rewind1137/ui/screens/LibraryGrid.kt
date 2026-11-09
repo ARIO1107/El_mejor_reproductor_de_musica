@@ -323,30 +323,6 @@ private fun LibraryHeader(
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )
         }
-
-        Surface(
-            shape = RoundedCornerShape(50),
-            color = accent.copy(alpha = 0.12f)
-        ) {
-            Row(
-                modifier = Modifier.padding(horizontal = 14.dp, vertical = 6.dp),
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Icon(
-                    imageVector = Icons.Default.MusicOff,
-                    contentDescription = null,
-                    modifier = Modifier.size(14.dp),
-                    tint = accent
-                )
-                Spacer(modifier = Modifier.width(6.dp))
-                Text(
-                    text = "$songCount",
-                    fontSize = 13.sp,
-                    fontWeight = FontWeight.Bold,
-                    color = accent
-                )
-            }
-        }
     }
 
     Row(
