@@ -266,7 +266,7 @@ fun AppNavGraph(
                 onEqSavePreset = { settingsViewModel.saveEqualizerPreset(it) },
                 onEqDeletePreset = { settingsViewModel.deleteEqualizerPreset(it) },
                 onEqSelectPreset = { settingsViewModel.setActiveEqualizerPreset(it) },
-                onEqUpdatePreset = { settingsViewModel.saveEqualizerPreset(it) },
+                onEqUpdatePreset = { preset -> settingsViewModel.saveEqualizerPreset(preset); playerViewModel.updateActiveEqPreset(preset) },
                 onToggleEqualizer = { playerViewModel.toggleEqualizer(it) },
                 onSearchQueryChange = { libraryViewModel.search(it) },
                 onClearRecentSearches = { libraryViewModel.clearRecentSearches() },

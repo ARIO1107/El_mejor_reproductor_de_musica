@@ -624,6 +624,11 @@ class PlayerViewModel @Inject constructor(
     }
 
     fun setBassBoostStrength(strength: Int) = audioEffectManager.setBassBoostStrength(strength)
+
+    fun updateActiveEqPreset(preset: EqualizerPreset?) {
+        activeEqPreset = preset
+        preset?.let { audioEffectManager.applyPreset(it) }
+    }
     fun setVirtualizerStrength(strength: Int) = audioEffectManager.setVirtualizerStrength(strength)
     fun toggleVisualizer(enabled: Boolean) {
         _uiState.update { it.copy(isVisualizerActive = enabled) }

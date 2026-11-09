@@ -32,6 +32,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.rewind1137.audio.AudioEffectManager
 import com.example.rewind1137.data.model.EqualizerPreset
+import com.example.rewind1137.ui.components.DynamicBackground
 import com.example.rewind1137.ui.components.GlassmorphicContainer
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -125,7 +126,7 @@ fun EqualizerScreen(
         }
     }
 
-    LaunchedEffect(activePresetId, eqAvailable) {
+    LaunchedEffect(activePresetId, eqAvailable, userPresets) {
         val preset = userPresets.firstOrNull { it.id == activePresetId } ?: return@LaunchedEffect
         if (eqAvailable) {
             applyBandValues(preset.bandLevels)
@@ -138,8 +139,8 @@ fun EqualizerScreen(
         }
     }
 
-    Box(modifier = Modifier.fillMaxSize().background(MaterialTheme.colorScheme.background)) {
-
+    Box(modifier = Modifier.fillMaxSize()) {
+        DynamicBackground(albumArtUri = albumArtUri)
 
         Scaffold(
             topBar = {
