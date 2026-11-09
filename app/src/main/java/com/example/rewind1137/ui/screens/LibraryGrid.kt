@@ -477,7 +477,7 @@ private fun LibraryFilters(
         modifier = Modifier
             .fillMaxWidth()
             .horizontalScroll(rememberScrollState())
-            .padding(top = 2.dp, bottom = 4.dp),
+            .padding(top = 6.dp, bottom = 6.dp),
         horizontalArrangement = Arrangement.spacedBy(8.dp)
     ) {
         LibraryFilter.entries.forEach { filter ->
