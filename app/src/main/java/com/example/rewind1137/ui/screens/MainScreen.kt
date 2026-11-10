@@ -155,8 +155,7 @@ fun MainScreen(
                             onDeletePreset = onEqDeletePreset,
                             onSelectPreset = onEqSelectPreset,
                             onUpdatePreset = onEqUpdatePreset,
-                            onToggleEqualizer = onToggleEqualizer,
-                            albumArtUri = activeSong?.albumArtUri
+                            onToggleEqualizer = onToggleEqualizer
                         )
                     }
                 }

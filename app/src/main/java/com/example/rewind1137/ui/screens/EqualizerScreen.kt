@@ -1,6 +1,5 @@
 package com.example.rewind1137.ui.screens
 
-import android.net.Uri
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
@@ -32,7 +31,6 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.rewind1137.audio.AudioEffectManager
 import com.example.rewind1137.data.model.EqualizerPreset
-import com.example.rewind1137.ui.components.DynamicBackground
 import com.example.rewind1137.ui.components.GlassmorphicContainer
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -46,8 +44,7 @@ fun EqualizerScreen(
     onDeletePreset: (String) -> Unit,
     onSelectPreset: (String) -> Unit,
     onUpdatePreset: (EqualizerPreset) -> Unit,
-    onToggleEqualizer: (Boolean) -> Unit = {},
-    albumArtUri: Uri? = null
+    onToggleEqualizer: (Boolean) -> Unit = {}
 ) {
     val activePreset = remember(activePresetId, userPresets) {
         userPresets.firstOrNull { it.id == activePresetId }
@@ -140,8 +137,6 @@ fun EqualizerScreen(
     }
 
     Box(modifier = Modifier.fillMaxSize()) {
-        DynamicBackground(albumArtUri = albumArtUri)
-
         Scaffold(
             topBar = {
                 TopAppBar(
