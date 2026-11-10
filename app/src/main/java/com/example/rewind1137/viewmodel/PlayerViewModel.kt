@@ -88,6 +88,7 @@ class PlayerViewModel @Inject constructor(
         startPositionTracker()
         initCrossfadeFromSettings()
         initReplayGainFromSettings()
+        restorePlaybackMode()
         initAudioEffects()
     }
 
@@ -104,6 +105,14 @@ class PlayerViewModel @Inject constructor(
             settingsRepository.userSettingsFlow.first().let { settings ->
                 MusicPlayerManager.setReplayGain(settings.replayGainEnabled, settings.replayGainPreamp)
             }
+        }
+    }
+
+    private fun restorePlaybackMode() {
+        viewModelScope.launch {
+            val mode = settingsRepository.playbackModeFlow.first()
+            _uiState.update { it.copy(playbackMode = mode) }
+            applyRepeatModeToPlayer(mode)
         }
     }
 
@@ -468,6 +477,7 @@ class PlayerViewModel @Inject constructor(
             )
         }
         applyRepeatModeToPlayer(nextMode)
+        viewModelScope.launch { settingsRepository.setPlaybackMode(nextMode) }
     }
 
     fun clearDisplayQueue() {

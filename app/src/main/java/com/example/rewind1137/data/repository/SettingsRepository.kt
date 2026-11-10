@@ -10,6 +10,9 @@ import com.example.rewind1137.data.model.EqualizerPreset
 import com.example.rewind1137.viewmodel.Playlist
 import com.example.rewind1137.viewmodel.AlbumArtMode
 import com.example.rewind1137.viewmodel.NowPlayingAnimation
+import com.example.rewind1137.viewmodel.PlaybackMode
+import com.example.rewind1137.viewmodel.SortOption
+import com.example.rewind1137.viewmodel.LibraryFilter
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
@@ -44,6 +47,9 @@ class SettingsRepository(private val context: Context) {
         val RECENT_SEARCHES = stringPreferencesKey("recent_searches_json")
         val ALBUM_ART_MODE = stringPreferencesKey("album_art_mode")
         val NOW_PLAYING_ANIMATION = stringPreferencesKey("now_playing_animation")
+        val PLAYBACK_MODE = stringPreferencesKey("playback_mode")
+        val LIBRARY_SORT_OPTION = stringPreferencesKey("library_sort_option")
+        val LIBRARY_FILTER = stringPreferencesKey("library_filter")
     }
 
     val userSettingsFlow: Flow<UserSettings> = context.dataStore.data.map { preferences ->
@@ -276,6 +282,21 @@ class SettingsRepository(private val context: Context) {
         preferences[PreferencesKeys.ACTIVE_EQUALIZER_PRESET_ID] ?: "builtin_normal"
     }
 
+    val playbackModeFlow: Flow<PlaybackMode> = context.dataStore.data.map { preferences ->
+        val raw = preferences[PreferencesKeys.PLAYBACK_MODE] ?: PlaybackMode.SEQUENTIAL.name
+        runCatching { PlaybackMode.valueOf(raw) }.getOrDefault(PlaybackMode.SEQUENTIAL)
+    }
+
+    val librarySortOptionFlow: Flow<SortOption> = context.dataStore.data.map { preferences ->
+        val raw = preferences[PreferencesKeys.LIBRARY_SORT_OPTION] ?: SortOption.DATE_ADDED_DESC.name
+        runCatching { SortOption.valueOf(raw) }.getOrDefault(SortOption.DATE_ADDED_DESC)
+    }
+
+    val libraryFilterFlow: Flow<LibraryFilter> = context.dataStore.data.map { preferences ->
+        val raw = preferences[PreferencesKeys.LIBRARY_FILTER] ?: LibraryFilter.ALL.name
+        runCatching { LibraryFilter.valueOf(raw) }.getOrDefault(LibraryFilter.ALL)
+    }
+
     suspend fun saveEqualizerPreset(preset: EqualizerPreset) {
         val current = equalizerPresetsFlow.first().toMutableList()
         val existingIndex = current.indexOfFirst { it.id == preset.id }
@@ -336,6 +357,24 @@ class SettingsRepository(private val context: Context) {
         }
     }
 
+    suspend fun setPlaybackMode(mode: PlaybackMode) {
+        context.dataStore.edit { preferences ->
+            preferences[PreferencesKeys.PLAYBACK_MODE] = mode.name
+        }
+    }
+
+    suspend fun setLibrarySortOption(option: SortOption) {
+        context.dataStore.edit { preferences ->
+            preferences[PreferencesKeys.LIBRARY_SORT_OPTION] = option.name
+        }
+    }
+
+    suspend fun setLibraryFilter(filter: LibraryFilter) {
+        context.dataStore.edit { preferences ->
+            preferences[PreferencesKeys.LIBRARY_FILTER] = filter.name
+        }
+    }
+
     private fun equalizerPresetsToJson(presets: List<EqualizerPreset>): String {
         val jsonArray = JSONArray()
         presets.forEach { preset ->
@@ -379,6 +418,9 @@ class SettingsRepository(private val context: Context) {
         val favorites = runBlocking { favoriteSongIdsFlow.first() }
         val playlists = runBlocking { customPlaylistsFlow.first() }
         val presets = runBlocking { equalizerPresetsFlow.first() }
+        val playbackMode = runBlocking { playbackModeFlow.first() }
+        val sortOption = runBlocking { librarySortOptionFlow.first() }
+        val libraryFilter = runBlocking { libraryFilterFlow.first() }
 
         return JSONObject().apply {
             put("excludeShortClips", settings.excludeShortAudios)
@@ -392,6 +434,9 @@ class SettingsRepository(private val context: Context) {
             put("replayGainPreamp", settings.replayGainPreamp.toDouble())
             put("albumArtMode", settings.albumArtMode.name)
             put("nowPlayingAnimation", settings.nowPlayingAnimation.name)
+            put("playbackMode", playbackMode.name)
+            put("librarySortOption", sortOption.name)
+            put("libraryFilter", libraryFilter.name)
             put("favoriteSongIds", JSONArray(favorites.map { it }))
             put("customPlaylists", JSONArray().apply {
                 playlists.forEach { pl ->
@@ -429,6 +474,9 @@ class SettingsRepository(private val context: Context) {
             if (json.has("excludeShortClips")) preferences[PreferencesKeys.EXCLUDE_SHORT_CLIPS] = json.getBoolean("excludeShortClips")
             if (json.has("albumArtMode")) preferences[PreferencesKeys.ALBUM_ART_MODE] = json.getString("albumArtMode")
             if (json.has("nowPlayingAnimation")) preferences[PreferencesKeys.NOW_PLAYING_ANIMATION] = json.getString("nowPlayingAnimation")
+            if (json.has("playbackMode")) preferences[PreferencesKeys.PLAYBACK_MODE] = json.getString("playbackMode")
+            if (json.has("librarySortOption")) preferences[PreferencesKeys.LIBRARY_SORT_OPTION] = json.getString("librarySortOption")
+            if (json.has("libraryFilter")) preferences[PreferencesKeys.LIBRARY_FILTER] = json.getString("libraryFilter")
         }
 
         if (json.has("favoriteSongIds")) {

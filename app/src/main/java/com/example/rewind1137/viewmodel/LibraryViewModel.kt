@@ -81,7 +81,7 @@ class LibraryViewModel @Inject constructor(
                 val state = _uiState.value
                 val processed = applyFilterAndSort(
                     songs = state.songsList,
-                    query = state.searchQuery,
+                    query = "",
                     sortOption = state.sortOption,
                     filter = state.libraryFilter,
                     favorites = favs
@@ -97,6 +97,36 @@ class LibraryViewModel @Inject constructor(
         viewModelScope.launch {
             settingsRepository.recentSearchesFlow.collectLatest { recentSearches ->
                 _uiState.update { it.copy(recentSearches = recentSearches) }
+            }
+        }
+        viewModelScope.launch {
+            settingsRepository.librarySortOptionFlow.collectLatest { sortOption ->
+                if (sortOption != _uiState.value.sortOption) {
+                    val state = _uiState.value
+                    val processed = applyFilterAndSort(
+                        songs = state.songsList,
+                        query = "",
+                        sortOption = sortOption,
+                        filter = state.libraryFilter,
+                        favorites = state.favoriteSongIds
+                    )
+                    _uiState.update { it.copy(sortOption = sortOption, filteredSongs = processed) }
+                }
+            }
+        }
+        viewModelScope.launch {
+            settingsRepository.libraryFilterFlow.collectLatest { filter ->
+                if (filter != _uiState.value.libraryFilter) {
+                    val state = _uiState.value
+                    val processed = applyFilterAndSort(
+                        songs = state.songsList,
+                        query = "",
+                        sortOption = state.sortOption,
+                        filter = filter,
+                        favorites = state.favoriteSongIds
+                    )
+                    _uiState.update { it.copy(libraryFilter = filter, filteredSongs = processed) }
+                }
             }
         }
     }
@@ -140,7 +170,7 @@ class LibraryViewModel @Inject constructor(
         val processed = withContext(Dispatchers.Default) {
             applyFilterAndSort(
                 songs = filteredByDuration,
-                query = state.searchQuery,
+                query = "",
                 sortOption = state.sortOption,
                 filter = state.libraryFilter,
                 favorites = state.favoriteSongIds
@@ -157,14 +187,7 @@ class LibraryViewModel @Inject constructor(
     }
 
     fun search(query: String) {
-        val processed = applyFilterAndSort(
-            songs = _uiState.value.songsList,
-            query = query,
-            sortOption = _uiState.value.sortOption,
-            filter = _uiState.value.libraryFilter,
-            favorites = _uiState.value.favoriteSongIds
-        )
-        _uiState.update { it.copy(searchQuery = query, filteredSongs = processed) }
+        _uiState.update { it.copy(searchQuery = query) }
         val trimmed = query.trim()
         if (trimmed.isNotEmpty()) {
             viewModelScope.launch {
@@ -182,23 +205,25 @@ class LibraryViewModel @Inject constructor(
     fun setSortOption(sortOption: SortOption) {
         val processed = applyFilterAndSort(
             songs = _uiState.value.songsList,
-            query = _uiState.value.searchQuery,
+            query = "",
             sortOption = sortOption,
             filter = _uiState.value.libraryFilter,
             favorites = _uiState.value.favoriteSongIds
         )
         _uiState.update { it.copy(sortOption = sortOption, filteredSongs = processed) }
+        viewModelScope.launch { settingsRepository.setLibrarySortOption(sortOption) }
     }
 
     fun setLibraryFilter(filter: LibraryFilter) {
         val processed = applyFilterAndSort(
             songs = _uiState.value.songsList,
-            query = _uiState.value.searchQuery,
+            query = "",
             sortOption = _uiState.value.sortOption,
             filter = filter,
             favorites = _uiState.value.favoriteSongIds
         )
         _uiState.update { it.copy(libraryFilter = filter, filteredSongs = processed) }
+        viewModelScope.launch { settingsRepository.setLibraryFilter(filter) }
     }
 
     fun setCompactMode(compact: Boolean) {
@@ -214,7 +239,7 @@ class LibraryViewModel @Inject constructor(
         }
         val processed = applyFilterAndSort(
             songs = _uiState.value.songsList,
-            query = _uiState.value.searchQuery,
+            query = "",
             sortOption = _uiState.value.sortOption,
             filter = _uiState.value.libraryFilter,
             favorites = currentFavorites
@@ -238,7 +263,7 @@ class LibraryViewModel @Inject constructor(
             } catch (e: Exception) {
                 val newList = _uiState.value.songsList.filter { it.id != song.id }
                 val filtered = applyFilterAndSort(
-                    newList, _uiState.value.searchQuery, _uiState.value.sortOption,
+                    newList, "", _uiState.value.sortOption,
                     _uiState.value.libraryFilter, _uiState.value.favoriteSongIds
                 )
                 _uiState.update { it.copy(songsList = newList, filteredSongs = filtered) }
@@ -311,7 +336,7 @@ class LibraryViewModel @Inject constructor(
 
     fun addSongsToImportedPlaylist(songIds: Set<Long>) {
         if (songIds.isEmpty()) return
-        val name = "Importadas (Spotify)"
+        val name = "Importadas"
         val existing = _uiState.value.customPlaylists.firstOrNull { it.name == name }
         if (existing != null) addSongsToPlaylist(existing.id, songIds)
         else createPlaylistWithSongs(name, songIds)
