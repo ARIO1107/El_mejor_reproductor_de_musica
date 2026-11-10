@@ -298,6 +298,10 @@ fun AppNavGraph(
                     val index = libraryUiState.filteredSongs.indexOfFirst { it.id == song.id }
                     if (index >= 0) playerViewModel.playSongAtIndex(index, libraryUiState.filteredSongs)
                 },
+                onPlaySong = { song ->
+                    val index = libraryUiState.songsList.indexOfFirst { it.id == song.id }
+                    if (index >= 0) playerViewModel.playSongAtIndex(index, libraryUiState.songsList)
+                },
                 nowPlayingAnimation = settingsUiState.userSettings.nowPlayingAnimation
             )
         }

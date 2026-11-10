@@ -60,6 +60,7 @@ fun MainScreen(
     onCreatePlaylist: (String) -> Unit = {},
     onSmartPlaylistClick: (String) -> Unit = {},
     onSongClick: (Song) -> Unit = {},
+    onPlaySong: (Song) -> Unit = {},
     nowPlayingAnimation: NowPlayingAnimation = NowPlayingAnimation.BARS
 ) {
     var gridColumns by remember { mutableIntStateOf(initialGridColumns) }
@@ -132,9 +133,11 @@ fun MainScreen(
                         libraryUiState = libraryUiState,
                         playerUiState = playerUiState,
                         onSearchQueryChange = onSearchQueryChange,
-                        onPlaySongAtIndex = onPlaySongAtIndex,
+                        onPlaySong = onPlaySong,
                         onClearRecentSearches = onClearRecentSearches,
-                        nowPlayingAnimation = nowPlayingAnimation
+                        nowPlayingAnimation = nowPlayingAnimation,
+                        gridColumns = gridColumns,
+                        compactList = libraryUiState.isCompactMode
                     )
                     2 -> PlaylistsView(
                         songs = libraryUiState.songsList,
