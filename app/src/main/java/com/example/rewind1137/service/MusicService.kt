@@ -26,12 +26,14 @@ import com.example.rewind1137.R
 import com.example.rewind1137.data.model.Song
 import com.example.rewind1137.utils.AlbumArtUtils
 import com.example.rewind1137.utils.MusicPlayerManager
+import com.example.rewind1137.utils.SongBitmapLoader
 import com.example.rewind1137.viewmodel.PlaybackMode
 import com.example.rewind1137.viewmodel.PlaybackStateHolder
 import com.example.rewind1137.widget.RewindWidgetRegistry
 import com.example.rewind1137.widget.RewindWidgetState
 import com.example.rewind1137.data.repository.SettingsRepository
 import com.google.common.collect.ImmutableList
+import com.google.common.util.concurrent.MoreExecutors
 import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -42,6 +44,7 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.withContext
 import java.util.Locale
+import java.util.concurrent.Executors
 import javax.inject.Inject
 
 @AndroidEntryPoint
@@ -72,6 +75,7 @@ class MusicService : MediaSessionService() {
     }
 
     private val serviceScope = CoroutineScope(Dispatchers.Main + SupervisorJob())
+    private val bitmapExecutor = MoreExecutors.listeningDecorator(Executors.newSingleThreadExecutor())
 
     @OptIn(UnstableApi::class)
     override fun onCreate() {
@@ -80,7 +84,9 @@ class MusicService : MediaSessionService() {
 
         val sharedPlayer = MusicPlayerManager.getPlayer(this)
 
-        mediaSession = MediaSession.Builder(this, sharedPlayer).build()
+        mediaSession = MediaSession.Builder(this, sharedPlayer)
+            .setBitmapLoader(SongBitmapLoader(this, bitmapExecutor))
+            .build()
 
         sharedPlayer.addListener(object : Player.Listener {
             override fun onMediaItemTransition(mediaItem: MediaItem?, reason: Int) {
@@ -163,7 +169,8 @@ class MusicService : MediaSessionService() {
     private fun buildMediaNotification(session: MediaSession, uiState: PlaybackStateHolder.State): Notification {
         val remoteViews = RemoteViews(packageName, R.layout.notification_media_custom)
         val expandedViews = RemoteViews(packageName, R.layout.notification_expanded)
-        val activeSong = uiState.filteredSongs.firstOrNull { it.id == uiState.currentSongId }
+        val activeSong = uiState.currentSong
+            ?: uiState.filteredSongs.firstOrNull { it.id == uiState.currentSongId }
             ?: uiState.filteredSongs.getOrNull(uiState.currentSongIndex)
         val albumArt = loadAlbumArt(activeSong)
 
@@ -345,7 +352,13 @@ class MusicService : MediaSessionService() {
     private fun loadAlbumArtAsync(song: Song) {
         if (song.id <= 0L || song.uri.scheme == "android.resource") return
         serviceScope.launch(Dispatchers.IO) {
-            val bitmap = AlbumArtUtils.getEmbeddedArt(this@MusicService, song.id, song.uri, NOTIF_ART_SIZE)
+            val bitmap = AlbumArtUtils.getSongArtwork(
+                context = this@MusicService,
+                songId = song.id,
+                contentUri = song.uri,
+                albumArtUri = song.albumArtUri,
+                maxSize = NOTIF_ART_SIZE
+            )
             if (bitmap != null) {
                 withContext(Dispatchers.Main) {
                     updateNotification()
@@ -413,19 +426,19 @@ class MusicService : MediaSessionService() {
     private fun refreshWidgetState() {
         RewindWidgetState.refresh(playbackStateHolder.state.value)
         RewindWidgetState.refresh(MusicPlayerManager.getPlayer(this))
-        val song = playbackStateHolder.state.value.filteredSongs.firstOrNull {
-            it.id == playbackStateHolder.state.value.currentSongId
-        } ?: playbackStateHolder.state.value.filteredSongs.getOrNull(
-            playbackStateHolder.state.value.currentSongIndex
-        )
+        val state = playbackStateHolder.state.value
+        val song = state.currentSong
+            ?: state.filteredSongs.firstOrNull { it.id == state.currentSongId }
+            ?: state.filteredSongs.getOrNull(state.currentSongIndex)
         runCatching {
             serviceScope.launch {
                 val art = song?.let {
                     runCatching {
-                        AlbumArtUtils.getEmbeddedArt(
+                        AlbumArtUtils.getSongArtwork(
                             this@MusicService,
                             it.id,
                             it.uri,
+                            it.albumArtUri,
                             NOTIF_ART_SIZE
                         )
                     }.getOrNull()
@@ -496,6 +509,7 @@ class MusicService : MediaSessionService() {
             release()
             mediaSession = null
         }
+        bitmapExecutor.shutdown()
         super.onDestroy()
     }
 }

@@ -1,6 +1,7 @@
 package com.example.rewind1137.ui.components
 
 import android.net.Uri
+import android.graphics.Bitmap
 import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
@@ -11,6 +12,7 @@ import androidx.compose.animation.core.*
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -35,6 +37,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.drawWithContent
 import androidx.compose.ui.geometry.Rect
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.layout.boundsInWindow
@@ -44,8 +47,12 @@ import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.draw.rotate
 import androidx.compose.ui.draw.shadow
+import androidx.compose.ui.graphics.BlendMode
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.CompositingStrategy
+import androidx.compose.ui.graphics.asImageBitmap
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
@@ -134,6 +141,43 @@ fun MiniPlayer(
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     Box(contentAlignment = Alignment.Center, modifier = Modifier.size(44.dp)) {
+                        val artworkModel = rememberSongArtwork(song)
+                        val ambientArtwork = remember(artworkModel) {
+                            (artworkModel as? Bitmap)?.let { bitmap ->
+                                Bitmap.createScaledBitmap(bitmap, 12, 12, true).asImageBitmap()
+                            }
+                        }
+                        if (ambientArtwork != null) {
+                            Image(
+                                bitmap = ambientArtwork,
+                                contentDescription = null,
+                                contentScale = ContentScale.Crop,
+                                alpha = 0.55f,
+                                modifier = Modifier
+                                    .fillMaxSize()
+                                    .graphicsLayer {
+                                        scaleX = 1.55f
+                                        scaleY = 1.55f
+                                        compositingStrategy = CompositingStrategy.Offscreen
+                                    }
+                                    .clip(CircleShape)
+                                    .drawWithContent {
+                                        drawContent()
+                                        drawRect(
+                                            brush = Brush.radialGradient(
+                                                colorStops = arrayOf(
+                                                    0f to Color.White,
+                                                    0.55f to Color.White.copy(alpha = 0.65f),
+                                                    1f to Color.Transparent
+                                                ),
+                                                center = center,
+                                                radius = size.minDimension * 0.5f
+                                            ),
+                                            blendMode = BlendMode.DstIn
+                                        )
+                                    }
+                            )
+                        }
                         if (isPlaying) {
                             Box(
                                 modifier = Modifier
@@ -142,7 +186,6 @@ fun MiniPlayer(
                                     .border(2.dp, MaterialTheme.colorScheme.primary.copy(alpha = glowAlpha), CircleShape)
                             )
                         }
-                        val artworkModel = rememberSongArtwork(song)
                         if (artworkModel != null) {
                             AsyncImage(
                                 model = ImageRequest.Builder(LocalContext.current)

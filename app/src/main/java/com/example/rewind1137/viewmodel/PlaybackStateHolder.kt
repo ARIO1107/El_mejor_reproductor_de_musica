@@ -14,6 +14,7 @@ class PlaybackStateHolder @Inject constructor() {
 
     data class State(
         val filteredSongs: List<Song> = emptyList(),
+        val currentSong: Song? = null,
         val currentSongId: Long? = null,
         val currentSongIndex: Int = -1,
         val isPlaying: Boolean = false,

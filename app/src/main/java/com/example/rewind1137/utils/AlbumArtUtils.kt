@@ -15,6 +15,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.platform.LocalContext
 import com.example.rewind1137.data.model.Song
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.withContext
 import java.util.Collections
 import kotlin.math.max
@@ -51,6 +52,18 @@ object AlbumArtUtils {
 
         val opts = BitmapFactory.Options().apply { inSampleSize = sample }
         return BitmapFactory.decodeByteArray(art, 0, art.size, opts)
+    }
+
+    fun loadArtworkFromUri(context: Context, uri: Uri?, maxSize: Int = 1024): Bitmap? {
+        if (uri == null) return null
+        return try {
+            context.contentResolver.openInputStream(uri)?.use { stream ->
+                val bytes = stream.readBytes()
+                if (bytes.isEmpty()) null else decodeDownsampled(bytes, maxSize)
+            }
+        } catch (_: Exception) {
+            null
+        }
     }
 
     suspend fun getEmbeddedArt(
@@ -112,6 +125,49 @@ object AlbumArtUtils {
         if (songId <= 0L || noEmbeddedArtSet.contains(songId)) return null
         return memoryCache.get(cacheKey(songId, maxSize))
     }
+
+    /**
+     * Resuelve la carátula exacta de una canción usando el mismo camino para la UI
+     * (PlayerSheet/MiniPlayer) y para la notificación: primero arte embebido y,
+     * si no existe, la carátula del álbum.
+     */
+    suspend fun getSongArtwork(
+        context: Context,
+        songId: Long,
+        contentUri: Uri?,
+        albumArtUri: Uri?,
+        maxSize: Int = 1024
+    ): Bitmap? {
+        val key = if (songId > 0L) cacheKey(songId, maxSize) else null
+        if (key != null) {
+            memoryCache.get(key)?.let { return it }
+        }
+
+        val embedded = if (songId > 0L) {
+            getEmbeddedArt(context, songId, contentUri, maxSize)
+        } else {
+            null
+        }
+        if (embedded != null) return embedded
+
+        val albumArt = withContext(Dispatchers.IO) {
+            loadArtworkFromUri(context, albumArtUri, maxSize)
+        }
+        if (albumArt != null && key != null) {
+            memoryCache.put(key, albumArt)
+        }
+        return albumArt
+    }
+
+    fun getSongArtworkBlocking(
+        context: Context,
+        songId: Long,
+        contentUri: Uri?,
+        albumArtUri: Uri?,
+        maxSize: Int = 1024
+    ): Bitmap? = runBlocking {
+        getSongArtwork(context, songId, contentUri, albumArtUri, maxSize)
+    }
 }
 
 @Composable
@@ -136,17 +192,14 @@ fun rememberSongArtwork(
         mutableStateOf<Any?>(AlbumArtUtils.getCachedArt(songId, maxArtSize))
     }
 
-    LaunchedEffect(songId, contentUri, maxArtSize) {
-        if (songId > 0L && contentUri != null) {
-            val bitmap = AlbumArtUtils.getEmbeddedArt(context, songId, contentUri, maxArtSize)
-            if (bitmap != null) {
-                artModel = bitmap
-            } else {
-                artModel = null
-            }
-        } else {
-            artModel = null
-        }
+    LaunchedEffect(songId, contentUri, albumArtUri, maxArtSize) {
+        artModel = AlbumArtUtils.getSongArtwork(
+            context = context,
+            songId = songId,
+            contentUri = contentUri,
+            albumArtUri = albumArtUri,
+            maxSize = maxArtSize
+        )
     }
 
     return artModel

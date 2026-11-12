@@ -5,6 +5,7 @@ import android.content.ClipData
 import android.content.Intent
 import android.net.Uri
 import android.os.Build
+import android.os.Bundle
 import android.util.Log
 import androidx.annotation.OptIn
 import androidx.compose.ui.geometry.Rect
@@ -23,6 +24,7 @@ import com.example.rewind1137.service.MusicService
 import com.example.rewind1137.utils.MusicPlayerManager
 import com.example.rewind1137.utils.SleepTimerManager
 import com.example.rewind1137.utils.SleepTimerOption
+import com.example.rewind1137.utils.SongMediaExtras
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
@@ -167,6 +169,7 @@ class PlayerViewModel @Inject constructor(
                     playbackStateHolder.update { state ->
                         state.copy(
                             filteredSongs = currentSongPlaylist.ifEmpty { state.filteredSongs },
+                            currentSong = song,
                             currentSongId = song.id,
                             currentSongIndex = newIndex,
                             durationMs = song.duration,
@@ -267,11 +270,23 @@ class PlayerViewModel @Inject constructor(
     private fun songToMediaItem(song: Song): MediaItem =
         MediaItem.Builder()
             .setUri(song.uri)
+            .setMediaId(song.id.toString())
             .setMediaMetadata(
                 MediaMetadata.Builder()
                     .setTitle(song.title)
                     .setArtist(song.artist)
-                    .setArtworkUri(song.albumArtUri)
+                    .setAlbumTitle(song.album)
+                    .setAlbumArtist(song.artist)
+                    // Siempre dejamos una URI para que el MediaSession pida la
+                    // caratula; el SongBitmapLoader resuelve el arte exacto.
+                    .setArtworkUri(song.albumArtUri ?: song.uri)
+                    .setExtras(
+                        Bundle().apply {
+                            putLong(SongMediaExtras.SONG_ID, song.id)
+                            putString(SongMediaExtras.SONG_URI, song.uri.toString())
+                            putString(SongMediaExtras.ALBUM_ART_URI, song.albumArtUri?.toString())
+                        }
+                    )
                     .build()
             )
             .build()
@@ -653,9 +668,12 @@ class PlayerViewModel @Inject constructor(
         userSettings: UserSettings
     ) {
         val index = filteredSongs.indexOfFirst { it.id == currentSongId }
+        val exactSong = _uiState.value.currentSong
+            ?: filteredSongs.firstOrNull { it.id == currentSongId }
         playbackStateHolder.update {
             it.copy(
                 filteredSongs = filteredSongs,
+                currentSong = exactSong,
                 currentSongId = currentSongId,
                 currentSongIndex = index,
                 isPlaying = _uiState.value.isPlaying,

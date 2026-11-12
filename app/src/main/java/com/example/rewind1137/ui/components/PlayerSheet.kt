@@ -37,12 +37,17 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.drawWithContent
 import androidx.compose.ui.draw.rotate
 import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Rect
+import androidx.compose.ui.graphics.BlendMode
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.CompositingStrategy
+import androidx.compose.ui.graphics.ImageBitmap
+import androidx.compose.ui.graphics.Shape
 import androidx.compose.ui.graphics.TransformOrigin
 import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.graphics.drawscope.Stroke
@@ -351,6 +356,15 @@ fun PlayerSheet(
     val animatedDom by animateColorAsState(targetValue = dominantColor, animationSpec = tween(600), label = "dom")
     val animatedAcc by animateColorAsState(targetValue = accentColor, animationSpec = tween(600), label = "acc")
 
+    // Caratula compartida para la luz ambiental: se reduce a una miniatura muy
+    // pequena que, al escalarse, se ve como un degradado suave de la portada.
+    val artworkModel = rememberSongArtwork(song, maxArtSize = 1024)
+    val ambientArtwork = remember(artworkModel) {
+        (artworkModel as? Bitmap)?.let { bitmap ->
+            Bitmap.createScaledBitmap(bitmap, 24, 24, true).asImageBitmap()
+        }
+    }
+
     val progress = if (durationMs > 0) (currentPositionMs.toFloat() / durationMs).coerceIn(0f, 1f) else 0f
     val fontScale = LocalDensity.current.fontScale
     val artWidthFraction = when {
@@ -541,7 +555,19 @@ fun PlayerSheet(
             Box(
                 modifier = Modifier
                     .fillMaxWidth(artWidthFraction)
-                    .aspectRatio(1f)
+                    .aspectRatio(1f),
+                contentAlignment = Alignment.Center
+            ) {
+                AmbientArtGlow(
+                    ambientArtwork = ambientArtwork,
+                    accentColor = animatedAcc,
+                    dominantColor = animatedDom,
+                    glowAlpha = glowAlpha,
+                    shape = artShape
+                )
+                Box(
+                modifier = Modifier
+                    .fillMaxSize()
                     .onGloballyPositioned { coords ->
                         if (artRect == null) artRect = coords.boundsInWindow()
                     }
@@ -926,6 +952,7 @@ fun PlayerSheet(
                                 )
                         )
                     }
+                }
                 }
             }
 
@@ -1821,4 +1848,73 @@ private fun albumArtModeIcon(mode: AlbumArtMode): ImageVector = when (mode) {
     AlbumArtMode.NEON -> Icons.Default.FlashOn
     AlbumArtMode.DREAM -> Icons.Default.AutoAwesome
     AlbumArtMode.WAVE -> Icons.Default.Waves
+}
+
+/**
+ * Luz ambiental tipo "Ambient Mode": toma la caratula reducida, la escala
+ * detras del arte y la funde radialmente hacia el fondo para que la
+ * iluminacion nazca de la imagen y muera suavemente en el fondo.
+ */
+@Composable
+private fun AmbientArtGlow(
+    ambientArtwork: ImageBitmap?,
+    accentColor: Color,
+    dominantColor: Color,
+    glowAlpha: Float,
+    shape: Shape
+) {
+    Box(
+        modifier = Modifier
+            .fillMaxSize()
+            .graphicsLayer {
+                scaleX = 1.55f
+                scaleY = 1.55f
+                compositingStrategy = CompositingStrategy.Offscreen
+            }
+            .drawWithContent {
+                drawContent()
+                drawRect(
+                    brush = Brush.radialGradient(
+                        colorStops = arrayOf(
+                            0f to Color.White,
+                            0.52f to Color.White.copy(alpha = 0.92f),
+                            0.78f to Color.White.copy(alpha = 0.38f),
+                            1f to Color.Transparent
+                        ),
+                        center = center,
+                        radius = size.minDimension * 0.5f
+                    ),
+                    blendMode = BlendMode.DstIn
+                )
+            }
+    ) {
+        if (ambientArtwork != null) {
+            Image(
+                bitmap = ambientArtwork,
+                contentDescription = null,
+                contentScale = ContentScale.Crop,
+                alpha = 0.62f,
+                modifier = Modifier
+                    .fillMaxSize()
+                    .clip(shape)
+            )
+        }
+
+        Canvas(modifier = Modifier.fillMaxSize()) {
+            val radius = size.minDimension * 0.62f
+            drawCircle(
+                brush = Brush.radialGradient(
+                    colors = listOf(
+                        accentColor.copy(alpha = (glowAlpha * 0.9f).coerceIn(0f, 0.42f)),
+                        dominantColor.copy(alpha = (glowAlpha * 0.35f).coerceIn(0f, 0.20f)),
+                        Color.Transparent
+                    ),
+                    center = center,
+                    radius = radius
+                ),
+                radius = radius,
+                center = center
+            )
+        }
+    }
 }
