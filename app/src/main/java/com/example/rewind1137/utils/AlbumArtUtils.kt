@@ -122,7 +122,10 @@ object AlbumArtUtils {
     }
 
     fun getCachedArt(songId: Long, maxSize: Int = 1024): Bitmap? {
-        if (songId <= 0L || noEmbeddedArtSet.contains(songId)) return null
+        if (songId <= 0L) return null
+        // La memoria caché también guarda la portada de álbum cuando la canción
+        // no tiene arte embebido, así que no hay que descartarla por estar en
+        // noEmbeddedArtSet.
         return memoryCache.get(cacheKey(songId, maxSize))
     }
 

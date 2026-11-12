@@ -1,18 +1,17 @@
 package com.example.rewind1137.ui.components
 
-import android.net.Uri
-import android.graphics.Bitmap
 import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.scaleIn
 import androidx.compose.animation.scaleOut
+import androidx.compose.animation.slideInVertically
+import androidx.compose.animation.slideOutVertically
 import androidx.compose.animation.togetherWith
 import androidx.compose.animation.core.*
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -31,7 +30,6 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import com.example.rewind1137.utils.rememberSongArtwork
 import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
@@ -42,25 +40,18 @@ import androidx.compose.ui.geometry.Rect
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.layout.boundsInWindow
 import androidx.compose.ui.layout.onGloballyPositioned
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalHapticFeedback
-import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.draw.rotate
 import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.BlendMode
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.CompositingStrategy
-import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.graphics.graphicsLayer
-import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import coil.compose.AsyncImage
-import coil.request.ImageRequest
-import com.example.rewind1137.R
 import com.example.rewind1137.data.model.Song
 import com.example.rewind1137.viewmodel.PlaybackMode
 import java.util.Locale
@@ -141,41 +132,41 @@ fun MiniPlayer(
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     Box(contentAlignment = Alignment.Center, modifier = Modifier.size(44.dp)) {
-                        val artworkModel = rememberSongArtwork(song)
-                        val ambientArtwork = remember(artworkModel) {
-                            (artworkModel as? Bitmap)?.let { bitmap ->
-                                Bitmap.createScaledBitmap(bitmap, 12, 12, true).asImageBitmap()
-                            }
-                        }
-                        if (ambientArtwork != null) {
-                            Image(
-                                bitmap = ambientArtwork,
-                                contentDescription = null,
-                                contentScale = ContentScale.Crop,
-                                alpha = 0.55f,
-                                modifier = Modifier
-                                    .fillMaxSize()
-                                    .graphicsLayer {
-                                        scaleX = 1.55f
-                                        scaleY = 1.55f
-                                        compositingStrategy = CompositingStrategy.Offscreen
-                                    }
-                                    .clip(CircleShape)
-                                    .drawWithContent {
-                                        drawContent()
-                                        drawRect(
-                                            brush = Brush.radialGradient(
-                                                colorStops = arrayOf(
-                                                    0f to Color.White,
-                                                    0.55f to Color.White.copy(alpha = 0.65f),
-                                                    1f to Color.Transparent
-                                                ),
-                                                center = center,
-                                                radius = size.minDimension * 0.5f
+                        val artworkState = rememberSongArtworkState(song, maxArtSize = 512)
+
+                        // Luz ambiental: nace de la propia portada y se funde al
+                        // mismo tiempo que la carátula al cambiar de canción.
+                        Box(
+                            modifier = Modifier
+                                .fillMaxSize()
+                                .graphicsLayer {
+                                    scaleX = 1.55f
+                                    scaleY = 1.55f
+                                    compositingStrategy = CompositingStrategy.Offscreen
+                                }
+                                .clip(CircleShape)
+                                .drawWithContent {
+                                    drawContent()
+                                    drawRect(
+                                        brush = Brush.radialGradient(
+                                            colorStops = arrayOf(
+                                                0f to Color.White,
+                                                0.55f to Color.White.copy(alpha = 0.65f),
+                                                1f to Color.Transparent
                                             ),
-                                            blendMode = BlendMode.DstIn
-                                        )
-                                    }
+                                            center = center,
+                                            radius = size.minDimension * 0.5f
+                                        ),
+                                        blendMode = BlendMode.DstIn
+                                    )
+                                }
+                        ) {
+                            SongArtworkLayers(
+                                state = artworkState,
+                                modifier = Modifier.fillMaxSize(),
+                                opacity = 0.55f,
+                                soften = 12,
+                                contentDescription = null
                             )
                         }
                         if (isPlaying) {
@@ -186,55 +177,58 @@ fun MiniPlayer(
                                     .border(2.dp, MaterialTheme.colorScheme.primary.copy(alpha = glowAlpha), CircleShape)
                             )
                         }
-                        if (artworkModel != null) {
-                            AsyncImage(
-                                model = ImageRequest.Builder(LocalContext.current)
-                                    .data(artworkModel)
-                                    .crossfade(true)
-                                    .build(),
-                                contentDescription = null,
-                                contentScale = ContentScale.Crop,
-                                placeholder = painterResource(id = R.drawable.ic_launcher_foreground),
-                                error = painterResource(id = R.drawable.ic_launcher_foreground),
-                                modifier = Modifier
-                                    .size(40.dp)
-                                    .clip(CircleShape)
-                                    .rotate(if (isPlaying) rotation else 0f)
-                            )
-                        } else {
-                            Box(
-                                modifier = Modifier
-                                    .size(40.dp)
-                                    .clip(CircleShape)
-                                    .background(MaterialTheme.colorScheme.surface),
-                                contentAlignment = Alignment.Center
-                            ) {
-                                Icon(
-                                    imageVector = Icons.Default.MusicNote,
-                                    contentDescription = null,
-                                    tint = MaterialTheme.colorScheme.primary,
-                                    modifier = Modifier.size(20.dp)
-                                )
+                        SongArtworkLayers(
+                            state = artworkState,
+                            modifier = Modifier
+                                .size(40.dp)
+                                .clip(CircleShape)
+                                .rotate(if (isPlaying) rotation else 0f),
+                            contentDescription = null,
+                            placeholder = {
+                                Box(
+                                    modifier = Modifier
+                                        .fillMaxSize()
+                                        .clip(CircleShape)
+                                        .background(MaterialTheme.colorScheme.surface),
+                                    contentAlignment = Alignment.Center
+                                ) {
+                                    Icon(
+                                        imageVector = Icons.Default.MusicNote,
+                                        contentDescription = null,
+                                        tint = MaterialTheme.colorScheme.primary,
+                                        modifier = Modifier.size(20.dp)
+                                    )
+                                }
                             }
-                        }
+                        )
                     }
                     Spacer(modifier = Modifier.width(10.dp))
-                    Column(modifier = Modifier.weight(1f)) {
-                        Text(
-                            text = song.title,
-                            color = MaterialTheme.colorScheme.onBackground,
-                            fontWeight = FontWeight.Bold,
-                            fontSize = 13.sp,
-                            maxLines = 1,
-                            overflow = TextOverflow.Ellipsis
-                        )
-                        Text(
-                            text = song.artist,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant,
-                            fontSize = 11.sp,
-                            maxLines = 1,
-                            overflow = TextOverflow.Ellipsis
-                        )
+                    AnimatedContent(
+                        targetState = song,
+                        transitionSpec = {
+                            (fadeIn(animationSpec = tween(240)) + slideInVertically(animationSpec = tween(300)) { height -> height / 3 })
+                                .togetherWith(fadeOut(animationSpec = tween(140)) + slideOutVertically(animationSpec = tween(180)) { height -> -height / 3 })
+                        },
+                        label = "miniTrackInfo",
+                        modifier = Modifier.weight(1f)
+                    ) { currentSong ->
+                        Column(modifier = Modifier.fillMaxWidth()) {
+                            Text(
+                                text = currentSong.title,
+                                color = MaterialTheme.colorScheme.onBackground,
+                                fontWeight = FontWeight.Bold,
+                                fontSize = 13.sp,
+                                maxLines = 1,
+                                overflow = TextOverflow.Ellipsis
+                            )
+                            Text(
+                                text = currentSong.artist,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                fontSize = 11.sp,
+                                maxLines = 1,
+                                overflow = TextOverflow.Ellipsis
+                            )
+                        }
                     }
                 }
 

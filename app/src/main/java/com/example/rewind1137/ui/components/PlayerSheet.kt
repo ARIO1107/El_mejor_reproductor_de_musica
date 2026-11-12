@@ -46,17 +46,14 @@ import androidx.compose.ui.graphics.BlendMode
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.CompositingStrategy
-import androidx.compose.ui.graphics.ImageBitmap
 import androidx.compose.ui.graphics.Shape
 import androidx.compose.ui.graphics.TransformOrigin
-import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.luminance
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.input.pointer.pointerInput
-import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.layout.boundsInWindow
 import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.platform.LocalContext
@@ -72,14 +69,12 @@ import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.util.lerp
-import coil.compose.AsyncImage
 import coil.imageLoader
 import coil.request.ImageRequest
 import coil.request.SuccessResult
 import coil.size.Precision
 import com.example.rewind1137.data.model.Song
 import com.example.rewind1137.utils.MusicPlayerManager
-import com.example.rewind1137.utils.rememberSongArtwork
 import com.example.rewind1137.viewmodel.AlbumArtMode
 import com.example.rewind1137.viewmodel.PlaybackMode
 import kotlinx.coroutines.Dispatchers
@@ -356,14 +351,10 @@ fun PlayerSheet(
     val animatedDom by animateColorAsState(targetValue = dominantColor, animationSpec = tween(600), label = "dom")
     val animatedAcc by animateColorAsState(targetValue = accentColor, animationSpec = tween(600), label = "acc")
 
-    // Caratula compartida para la luz ambiental: se reduce a una miniatura muy
+    // Carátula compartida para la luz ambiental: se reduce a una miniatura muy
     // pequena que, al escalarse, se ve como un degradado suave de la portada.
-    val artworkModel = rememberSongArtwork(song, maxArtSize = 1024)
-    val ambientArtwork = remember(artworkModel) {
-        (artworkModel as? Bitmap)?.let { bitmap ->
-            Bitmap.createScaledBitmap(bitmap, 24, 24, true).asImageBitmap()
-        }
-    }
+    // El estado conserva la portada anterior mientras carga la nueva.
+    val artworkState = rememberSongArtworkState(song, maxArtSize = 1024)
 
     val progress = if (durationMs > 0) (currentPositionMs.toFloat() / durationMs).coerceIn(0f, 1f) else 0f
     val fontScale = LocalDensity.current.fontScale
@@ -559,7 +550,7 @@ fun PlayerSheet(
                 contentAlignment = Alignment.Center
             ) {
                 AmbientArtGlow(
-                    ambientArtwork = ambientArtwork,
+                    artworkState = artworkState,
                     accentColor = animatedAcc,
                     dominantColor = animatedDom,
                     glowAlpha = glowAlpha,
@@ -613,46 +604,13 @@ fun PlayerSheet(
                     },
                 contentAlignment = Alignment.Center
 ) {
-                AnimatedContent(
-                    targetState = song,
-                    transitionSpec = {
-                        (fadeIn(animationSpec = tween(280)) + scaleIn(initialScale = 0.94f, animationSpec = tween(280)))
-                            .togetherWith(fadeOut(animationSpec = tween(200)) + scaleOut(targetScale = 1.06f, animationSpec = tween(200)))
-                    },
-                    label = "albumArtCrossfade"
-                ) { currentSong ->
-                    val artworkModel = rememberSongArtwork(currentSong, maxArtSize = 1024)
-                    val songId = currentSong?.id ?: 0L
-                    val dateMod = currentSong?.dateAdded ?: 0L
-                    val artworkImageBitmap = remember(artworkModel) {
-                        (artworkModel as? Bitmap)?.asImageBitmap()
-                    }
-
-                    if (artworkImageBitmap != null) {
-                        Image(
-                            bitmap = artworkImageBitmap,
-                            contentDescription = "Carátula del álbum",
-                            contentScale = ContentScale.Crop,
-                            modifier = Modifier
-                                .fillMaxSize()
-                                .then(artAnimModifier)
-                        )
-                    } else if (artworkModel != null) {
-                        val uniqueKey = "player_art_v9_${songId}_${dateMod}"
-                        AsyncImage(
-                            model = ImageRequest.Builder(context)
-                                .data(artworkModel)
-                                .memoryCacheKey(uniqueKey)
-                                .diskCacheKey(uniqueKey)
-                                .crossfade(true)
-                                .build(),
-                            contentDescription = "Carátula del álbum",
-                            contentScale = ContentScale.Crop,
-                            modifier = Modifier
-                                .fillMaxSize()
-                                .then(artAnimModifier)
-                        )
-                    } else {
+                SongArtworkLayers(
+                    state = artworkState,
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .then(artAnimModifier),
+                    contentDescription = "Carátula del álbum",
+                    placeholder = {
                         Box(
                             modifier = Modifier
                                 .fillMaxSize()
@@ -667,7 +625,7 @@ fun PlayerSheet(
                             )
                         }
                     }
-                }
+                )
 
                 when (albumArtMode) {
                     AlbumArtMode.STATIC -> Unit
@@ -1857,7 +1815,7 @@ private fun albumArtModeIcon(mode: AlbumArtMode): ImageVector = when (mode) {
  */
 @Composable
 private fun AmbientArtGlow(
-    ambientArtwork: ImageBitmap?,
+    artworkState: SongArtworkState,
     accentColor: Color,
     dominantColor: Color,
     glowAlpha: Float,
@@ -1888,17 +1846,15 @@ private fun AmbientArtGlow(
                 )
             }
     ) {
-        if (ambientArtwork != null) {
-            Image(
-                bitmap = ambientArtwork,
-                contentDescription = null,
-                contentScale = ContentScale.Crop,
-                alpha = 0.62f,
-                modifier = Modifier
-                    .fillMaxSize()
-                    .clip(shape)
-            )
-        }
+        SongArtworkLayers(
+            state = artworkState,
+            modifier = Modifier
+                .fillMaxSize()
+                .clip(shape),
+            opacity = 0.62f,
+            soften = 24,
+            contentDescription = null
+        )
 
         Canvas(modifier = Modifier.fillMaxSize()) {
             val radius = size.minDimension * 0.62f
