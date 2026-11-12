@@ -82,21 +82,6 @@ object RewindWidgetState {
     @Volatile
     private var initialized = false
 
-    fun refresh(player: ExoPlayer) {
-        val mediaItem = player.currentMediaItem
-        val metadata = mediaItem?.mediaMetadata
-        songTitle = metadata?.title?.toString()?.takeIf { it.isNotBlank() } ?: "Rewind 1137"
-        songArtist = metadata?.artist?.toString()?.takeIf { it.isNotBlank() } ?: "Tu musica, tu estilo"
-        songAlbum = metadata?.albumTitle?.toString()?.takeIf { it.isNotBlank() } ?: ""
-        isPlaying = player.isPlaying
-        hasSong = mediaItem != null
-        progressMs = player.currentPosition.coerceAtLeast(0L)
-        durationMs = player.duration.coerceAtLeast(0L)
-        if (mediaItem != null) {
-            initialized = true
-        }
-    }
-
     fun refreshPlayback(player: ExoPlayer) {
         isPlaying = player.isPlaying
         progressMs = player.currentPosition.coerceAtLeast(0L)
