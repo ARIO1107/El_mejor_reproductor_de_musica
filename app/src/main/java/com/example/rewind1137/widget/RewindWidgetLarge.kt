@@ -7,8 +7,7 @@ import androidx.compose.ui.unit.sp
 import androidx.glance.GlanceId
 import androidx.glance.GlanceModifier
 import androidx.glance.GlanceTheme
-import androidx.glance.action.actionStartActivity
-import androidx.glance.action.clickable
+import androidx.glance.LocalSize
 import androidx.glance.appwidget.GlanceAppWidget
 import androidx.glance.appwidget.provideContent
 import androidx.glance.background
@@ -18,31 +17,34 @@ import androidx.glance.layout.Row
 import androidx.glance.layout.Spacer
 import androidx.glance.layout.fillMaxSize
 import androidx.glance.layout.fillMaxWidth
+import androidx.glance.layout.height
 import androidx.glance.layout.padding
 import androidx.glance.layout.width
 import androidx.glance.text.FontWeight
 import androidx.glance.text.Text
 import androidx.glance.text.TextStyle
 import androidx.glance.unit.ColorProvider
-import com.example.rewind1137.MainActivity
 import com.example.rewind1137.R
+import com.example.rewind1137.viewmodel.PlaybackMode
 
 class RewindWidgetLarge : GlanceAppWidget() {
     override suspend fun provideGlance(context: Context, id: GlanceId) {
-        val state = RewindWidgetState
+        ensureWidgetArtwork(context)
         provideContent {
             GlanceTheme {
                 WidgetContentLarge(
-                    songTitle = state.songTitle,
-                    songArtist = state.songArtist,
-                    songAlbum = state.songAlbum,
-                    isPlaying = state.isPlaying,
-                    hasSong = state.hasSong,
-                    progressMs = state.progressMs,
-                    durationMs = state.durationMs,
-                    art = state.albumArt,
-                    upNext = state.upNext,
-                    queueCount = state.queueCount
+                    songTitle = RewindWidgetState.songTitle,
+                    songArtist = RewindWidgetState.songArtist,
+                    songAlbum = RewindWidgetState.songAlbum,
+                    isPlaying = RewindWidgetState.isPlaying,
+                    hasSong = RewindWidgetState.hasSong,
+                    isFavorite = RewindWidgetState.isFavorite,
+                    playbackMode = RewindWidgetState.playbackMode,
+                    progressMs = RewindWidgetState.progressMs,
+                    durationMs = RewindWidgetState.durationMs,
+                    art = RewindWidgetState.albumArt,
+                    upNext = RewindWidgetState.upNext,
+                    queueCount = RewindWidgetState.queueCount
                 )
             }
         }
@@ -56,19 +58,25 @@ private fun WidgetContentLarge(
     songAlbum: String,
     isPlaying: Boolean,
     hasSong: Boolean,
+    isFavorite: Boolean,
+    playbackMode: PlaybackMode,
     progressMs: Long,
     durationMs: Long,
     art: android.graphics.Bitmap?,
     upNext: List<String>,
     queueCount: Int
 ) {
+    val height = LocalSize.current.height.takeIf { it > 0.dp } ?: 280.dp
+    val contentHeight = (height - 28.dp).coerceAtLeast(150.dp)
+    val artSize = (contentHeight * 0.36f).coerceIn(72.dp, 122.dp)
+    val controlSize = (contentHeight * 0.16f).coerceIn(32.dp, 42.dp)
+    val maxUpNext = if (height > 300.dp) 3 else 2
+
     Column(
         modifier = GlanceModifier
             .fillMaxSize()
             .background(R.drawable.widget_bg_card)
-            .padding(16.dp)
-            .clickable(actionStartActivity<MainActivity>()),
-        verticalAlignment = Alignment.CenterVertically
+            .padding(14.dp)
     ) {
         Row(
             modifier = GlanceModifier.fillMaxWidth(),
@@ -77,80 +85,119 @@ private fun WidgetContentLarge(
             Text(
                 text = "REWIND 1137",
                 style = TextStyle(
-                    fontSize = 11.sp,
+                    fontSize = 10.sp,
                     fontWeight = FontWeight.Bold,
                     color = ColorProvider(R.color.widget_accent)
                 ),
                 modifier = GlanceModifier.defaultWeight()
             )
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                WidgetStatusDot(isPlaying && hasSong)
-                Spacer(GlanceModifier.width(5.dp))
+            WidgetStatusDot(isPlaying && hasSong)
+            Spacer(GlanceModifier.width(5.dp))
+            WidgetStatusText(hasSong, isPlaying)
+            WidgetOpenButton(size = 28.dp)
+        }
+
+        Spacer(GlanceModifier.height(6.dp))
+
+        Row(
+            modifier = GlanceModifier.fillMaxWidth(),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            WidgetArtImage(
+                bitmap = if (hasSong) art else null,
+                fallbackIcon = R.drawable.ic_widget_music,
+                size = artSize,
+                cornerRadius = 18.dp
+            )
+            Spacer(GlanceModifier.width(12.dp))
+            Column(modifier = GlanceModifier.defaultWeight()) {
                 Text(
-                    text = when {
-                        !hasSong -> "Sin rewindducción"
-                        isPlaying -> "Sonando ahora"
-                        else -> "Pausado"
-                    },
+                    text = if (hasSong) songTitle else "Toca para abrir Rewind 1137",
+                    maxLines = 2,
                     style = TextStyle(
-                        fontSize = 10.sp,
+                        fontSize = 17.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = ColorProvider(R.color.widget_text)
+                    )
+                )
+                Spacer(GlanceModifier.height(2.dp))
+                Text(
+                    text = if (hasSong) songArtist else "Tu musica, tu estilo",
+                    maxLines = 1,
+                    style = TextStyle(
+                        fontSize = 12.sp,
                         color = ColorProvider(R.color.widget_subtext)
                     )
                 )
+                if (hasSong && songAlbum.isNotBlank()) {
+                    Text(
+                        text = songAlbum,
+                        maxLines = 1,
+                        style = TextStyle(
+                            fontSize = 10.sp,
+                            color = ColorProvider(R.color.widget_subtext)
+                        )
+                    )
+                }
+                Spacer(GlanceModifier.height(7.dp))
+                WidgetProgress(
+                    progressMs = progressMs,
+                    durationMs = durationMs,
+                    visible = hasSong
+                )
+                if (hasSong) {
+                    Spacer(GlanceModifier.height(3.dp))
+                    Row(modifier = GlanceModifier.fillMaxWidth()) {
+                        Text(
+                            text = formatWidgetTime(progressMs),
+                            style = TextStyle(
+                                fontSize = 9.sp,
+                                color = ColorProvider(R.color.widget_subtext)
+                            ),
+                            modifier = GlanceModifier.defaultWeight()
+                        )
+                        Text(
+                            text = formatWidgetTime(durationMs),
+                            style = TextStyle(
+                                fontSize = 9.sp,
+                                color = ColorProvider(R.color.widget_subtext)
+                            )
+                        )
+                    }
+                }
             }
         }
-        Spacer()
-        WidgetArtImage(
-            bitmap = if (hasSong) art else null,
-            fallbackIcon = R.drawable.ic_launcher_foreground,
-            size = 140.dp
-        )
-        Spacer()
-        Text(
-            text = if (hasSong) songTitle else "Toca para abrir Rewind 1137",
-            maxLines = 1,
-            style = TextStyle(
-                fontSize = 18.sp,
-                fontWeight = FontWeight.Bold,
-                color = ColorProvider(R.color.widget_text)
-            ),
-            modifier = GlanceModifier.fillMaxWidth()
-        )
-        Text(
-            text = if (hasSong && songAlbum.isNotBlank()) "$songArtist · $songAlbum" else songArtist,
-            maxLines = 1,
-            style = TextStyle(
-                fontSize = 12.sp,
-                color = ColorProvider(R.color.widget_subtext)
-            ),
-            modifier = GlanceModifier.fillMaxWidth()
-        )
-        Spacer()
-        WidgetProgress(
-            progressMs = progressMs,
-            durationMs = durationMs,
-            visible = hasSong
-        )
-        Spacer()
+
+        Spacer(GlanceModifier.height(8.dp))
+
         Row(
             modifier = GlanceModifier.fillMaxWidth(),
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalAlignment = Alignment.CenterVertically
         ) {
-            WidgetPrevButton()
-            Spacer(GlanceModifier.width(18.dp))
-            WidgetPlayPauseButton(isPlaying && hasSong)
-            Spacer(GlanceModifier.width(18.dp))
-            WidgetNextButton()
+            WidgetLikeButton(
+                isFavorite = isFavorite,
+                enabled = hasSong,
+                size = controlSize
+            )
+            Spacer(GlanceModifier.width(8.dp))
+            WidgetPrevButton(size = controlSize)
+            Spacer(GlanceModifier.width(12.dp))
+            WidgetPlayPauseButton(isPlaying = isPlaying && hasSong, size = controlSize + 6.dp)
+            Spacer(GlanceModifier.width(12.dp))
+            WidgetNextButton(size = controlSize)
+            Spacer(GlanceModifier.width(8.dp))
+            WidgetModeButton(mode = playbackMode, size = controlSize - 2.dp)
         }
+
         if (hasSong && upNext.isNotEmpty()) {
-            Spacer()
+            Spacer(GlanceModifier.height(8.dp))
             Row(
                 modifier = GlanceModifier.fillMaxWidth(),
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 Text(
-                    text = "A CONTINUACIÓN",
+                    text = "A CONTINUACION",
                     style = TextStyle(
                         fontSize = 9.sp,
                         fontWeight = FontWeight.Bold,
@@ -166,8 +213,8 @@ private fun WidgetContentLarge(
                     )
                 )
             }
-            Spacer()
-            upNext.take(3).forEachIndexed { index, title ->
+            Spacer(GlanceModifier.height(4.dp))
+            upNext.take(maxUpNext).forEachIndexed { index, title ->
                 Row(
                     modifier = GlanceModifier.fillMaxWidth(),
                     verticalAlignment = Alignment.CenterVertically
@@ -191,7 +238,7 @@ private fun WidgetContentLarge(
                         modifier = GlanceModifier.defaultWeight()
                     )
                 }
-                Spacer()
+                Spacer(GlanceModifier.height(2.dp))
             }
         }
     }

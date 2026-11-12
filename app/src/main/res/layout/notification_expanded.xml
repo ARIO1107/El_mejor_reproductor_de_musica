@@ -1,185 +1,205 @@
 <?xml version="1.0" encoding="utf-8"?>
-<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
-    android:background="#181414"
-    android:padding="16dp">
+    android:background="@drawable/notif_bg_fallback">
 
-    <!-- Header Container: Large Album Art and Track Meta -->
-    <RelativeLayout
-        android:id="@+id/expanded_header_container"
+    <ImageView
+        android:id="@+id/notification_expanded_glow"
         android:layout_width="match_parent"
-        android:layout_height="wrap_content">
+        android:layout_height="match_parent"
+        android:contentDescription="@null"
+        android:scaleType="centerCrop" />
 
-        <!-- Large Album Art -->
-        <ImageView
-            android:id="@+id/notification_expanded_art"
-            android:layout_width="100dp"
-            android:layout_height="100dp"
-            android:layout_alignParentStart="true"
-            android:layout_alignParentTop="true"
-            android:scaleType="centerCrop"
-            android:src="@drawable/ic_launcher_background" />
+    <View
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:background="@drawable/notif_scrim" />
 
-        <!-- Close X Button Top-Right -->
-        <ImageButton
-            android:id="@+id/notification_expanded_btn_close"
-            android:layout_width="32dp"
-            android:layout_height="32dp"
-            android:layout_alignParentEnd="true"
-            android:layout_alignParentTop="true"
-            android:background="?android:attr/selectableItemBackgroundBorderless"
-            android:src="@drawable/ic_notif_close"
-            android:contentDescription="Eliminar notificación" />
-
-        <!-- Track Info -->
-        <LinearLayout
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_toEndOf="@id/notification_expanded_art"
-            android:layout_toStartOf="@id/notification_expanded_btn_close"
-            android:layout_marginStart="16dp"
-            android:layout_alignParentTop="true"
-            android:orientation="vertical">
-
-            <TextView
-                android:id="@+id/notification_expanded_title"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:text="Título de la canción"
-                android:textColor="#FFFFFF"
-                android:textSize="16sp"
-                android:textStyle="bold"
-                android:singleLine="true"
-                android:ellipsize="end" />
-
-            <TextView
-                android:id="@+id/notification_expanded_artist"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:text="Artista"
-                android:textColor="#B0BEC5"
-                android:textSize="13sp"
-                android:singleLine="true"
-                android:ellipsize="end"
-                android:layout_marginTop="4dp" />
-
-            <TextView
-                android:id="@+id/notification_expanded_album"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:text="Álbum"
-                android:textColor="#78909C"
-                android:textSize="11sp"
-                android:singleLine="true"
-                android:ellipsize="end"
-                android:layout_marginTop="2dp" />
-        </LinearLayout>
-    </RelativeLayout>
-
-    <!-- Progress Track Section -->
     <RelativeLayout
-        android:id="@+id/progress_expanded_container"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:layout_below="@id/expanded_header_container"
-        android:layout_marginTop="14dp">
+        android:padding="16dp">
 
-        <TextView
-            android:id="@+id/notification_expanded_time_current"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_alignParentStart="true"
-            android:text="00:00"
-            android:textColor="#90A4AE"
-            android:textSize="11sp" />
-
-        <TextView
-            android:id="@+id/notification_expanded_time_total"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_alignParentEnd="true"
-            android:text="00:00"
-            android:textColor="#90A4AE"
-            android:textSize="11sp" />
-
-        <ProgressBar
-            android:id="@+id/notification_expanded_progress"
-            style="?android:attr/progressBarStyleHorizontal"
+        <!-- Header Container: Large Album Art and Track Meta -->
+        <RelativeLayout
+            android:id="@+id/expanded_header_container"
             android:layout_width="match_parent"
-            android:layout_height="4dp"
-            android:layout_centerVertical="true"
-            android:layout_toEndOf="@id/notification_expanded_time_current"
-            android:layout_toStartOf="@id/notification_expanded_time_total"
-            android:layout_marginStart="8dp"
-            android:layout_marginEnd="8dp"
-            android:max="100"
-            android:progress="0"
-            android:progressTint="#E91E63"
-            android:progressBackgroundTint="#33FFFFFF" />
-    </RelativeLayout>
+            android:layout_height="wrap_content">
 
-    <!-- Controls -->
-    <LinearLayout
-        android:layout_width="match_parent"
-        android:layout_height="48dp"
-        android:layout_below="@id/progress_expanded_container"
-        android:layout_marginTop="12dp"
-        android:orientation="horizontal"
-        android:gravity="center"
-        android:weightSum="5">
+            <!-- Large Album Art -->
+            <ImageView
+                android:id="@+id/notification_expanded_art"
+                android:layout_width="100dp"
+                android:layout_height="100dp"
+                android:layout_alignParentStart="true"
+                android:layout_alignParentTop="true"
+                android:scaleType="centerCrop"
+                android:src="@drawable/ic_launcher_background" />
 
-        <ImageButton
-            android:id="@+id/notification_expanded_btn_like"
-            android:layout_width="0dp"
-            android:layout_height="match_parent"
-            android:layout_weight="1"
-            android:background="?android:attr/selectableItemBackgroundBorderless"
-            android:src="@drawable/ic_notif_heart_off"
-            android:contentDescription="Favorito" />
+            <!-- Close X Button Top-Right -->
+            <ImageButton
+                android:id="@+id/notification_expanded_btn_close"
+                android:layout_width="32dp"
+                android:layout_height="32dp"
+                android:layout_alignParentEnd="true"
+                android:layout_alignParentTop="true"
+                android:background="?android:attr/selectableItemBackgroundBorderless"
+                android:contentDescription="Cerrar notificación"
+                android:src="@drawable/ic_notif_close"
+                android:tint="#CCFFFFFF" />
 
-        <ImageButton
-            android:id="@+id/notification_expanded_btn_prev"
-            android:layout_width="0dp"
-            android:layout_height="match_parent"
-            android:layout_weight="1"
-            android:background="?android:attr/selectableItemBackgroundBorderless"
-            android:src="@drawable/ic_notif_prev"
-            android:contentDescription="Anterior" />
+            <!-- Track Info -->
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_alignParentTop="true"
+                android:layout_marginStart="16dp"
+                android:layout_toEndOf="@id/notification_expanded_art"
+                android:layout_toStartOf="@id/notification_expanded_btn_close"
+                android:orientation="vertical">
 
-        <FrameLayout
-            android:layout_width="0dp"
-            android:layout_height="match_parent"
-            android:layout_weight="1">
+                <TextView
+                    android:id="@+id/notification_expanded_title"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:ellipsize="end"
+                    android:singleLine="true"
+                    android:text="Título de la canción"
+                    android:textColor="#FFFFFF"
+                    android:textSize="16sp"
+                    android:textStyle="bold" />
+
+                <TextView
+                    android:id="@+id/notification_expanded_artist"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="4dp"
+                    android:ellipsize="end"
+                    android:singleLine="true"
+                    android:text="Artista"
+                    android:textColor="#D2CCE0"
+                    android:textSize="13sp" />
+
+                <TextView
+                    android:id="@+id/notification_expanded_album"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="2dp"
+                    android:ellipsize="end"
+                    android:singleLine="true"
+                    android:text="Álbum"
+                    android:textColor="#A79FBB"
+                    android:textSize="11sp" />
+            </LinearLayout>
+        </RelativeLayout>
+
+        <!-- Progress Track Section -->
+        <RelativeLayout
+            android:id="@+id/progress_expanded_container"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_below="@id/expanded_header_container"
+            android:layout_marginTop="14dp">
+
+            <TextView
+                android:id="@+id/notification_expanded_time_current"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_alignParentStart="true"
+                android:text="00:00"
+                android:textColor="#B0A8C4"
+                android:textSize="11sp" />
+
+            <TextView
+                android:id="@+id/notification_expanded_time_total"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_alignParentEnd="true"
+                android:text="00:00"
+                android:textColor="#B0A8C4"
+                android:textSize="11sp" />
+
+            <ProgressBar
+                android:id="@+id/notification_expanded_progress"
+                style="?android:attr/progressBarStyleHorizontal"
+                android:layout_width="match_parent"
+                android:layout_height="4dp"
+                android:layout_centerVertical="true"
+                android:layout_marginStart="8dp"
+                android:layout_marginEnd="8dp"
+                android:layout_toEndOf="@id/notification_expanded_time_current"
+                android:layout_toStartOf="@id/notification_expanded_time_total"
+                android:max="100"
+                android:progress="0"
+                android:progressBackgroundTint="#33FFFFFF"
+                android:progressTint="#FFB388FE" />
+        </RelativeLayout>
+
+        <!-- Controls -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="48dp"
+            android:layout_below="@id/progress_expanded_container"
+            android:layout_marginTop="12dp"
+            android:gravity="center"
+            android:orientation="horizontal"
+            android:weightSum="5">
 
             <ImageButton
-                android:id="@+id/notification_expanded_btn_play_pause"
-                android:layout_width="44dp"
-                android:layout_height="44dp"
-                android:layout_gravity="center"
-                android:background="@drawable/bg_notif_play_btn"
-                android:src="@drawable/ic_notif_play"
-                android:contentDescription="Reproducir / Pausa" />
-        </FrameLayout>
+                android:id="@+id/notification_expanded_btn_like"
+                android:layout_width="0dp"
+                android:layout_height="match_parent"
+                android:layout_weight="1"
+                android:background="?android:attr/selectableItemBackgroundBorderless"
+                android:contentDescription="Favorito"
+                android:src="@drawable/ic_notif_heart_off" />
 
-        <ImageButton
-            android:id="@+id/notification_expanded_btn_next"
-            android:layout_width="0dp"
-            android:layout_height="match_parent"
-            android:layout_weight="1"
-            android:background="?android:attr/selectableItemBackgroundBorderless"
-            android:src="@drawable/ic_notif_next"
-            android:contentDescription="Siguiente" />
+            <ImageButton
+                android:id="@+id/notification_expanded_btn_prev"
+                android:layout_width="0dp"
+                android:layout_height="match_parent"
+                android:layout_weight="1"
+                android:background="?android:attr/selectableItemBackgroundBorderless"
+                android:contentDescription="Anterior"
+                android:src="@drawable/ic_notif_prev"
+                android:tint="#F2FFFFFF" />
 
-        <ImageButton
-            android:id="@+id/notification_expanded_btn_mode"
-            android:layout_width="0dp"
-            android:layout_height="match_parent"
-            android:layout_weight="1"
-            android:background="?android:attr/selectableItemBackgroundBorderless"
-            android:src="@drawable/ic_notif_mode_repeat"
-            android:contentDescription="Modo de rewindducción" />
+            <FrameLayout
+                android:layout_width="0dp"
+                android:layout_height="match_parent"
+                android:layout_weight="1">
 
-    </LinearLayout>
+                <ImageButton
+                    android:id="@+id/notification_expanded_btn_play_pause"
+                    android:layout_width="44dp"
+                    android:layout_height="44dp"
+                    android:layout_gravity="center"
+                    android:background="@drawable/bg_notif_play_btn"
+                    android:contentDescription="Reproducir / Pausa"
+                    android:src="@drawable/ic_notif_play"
+                    android:tint="#FFFFFFFF" />
+            </FrameLayout>
 
-</RelativeLayout>
+            <ImageButton
+                android:id="@+id/notification_expanded_btn_next"
+                android:layout_width="0dp"
+                android:layout_height="match_parent"
+                android:layout_weight="1"
+                android:background="?android:attr/selectableItemBackgroundBorderless"
+                android:contentDescription="Siguiente"
+                android:src="@drawable/ic_notif_next"
+                android:tint="#F2FFFFFF" />
+
+            <ImageButton
+                android:id="@+id/notification_expanded_btn_mode"
+                android:layout_width="0dp"
+                android:layout_height="match_parent"
+                android:layout_weight="1"
+                android:background="?android:attr/selectableItemBackgroundBorderless"
+                android:contentDescription="Modo de reproducción"
+                android:src="@drawable/ic_notif_mode_repeat"
+                android:tint="#FFB388FE" />
+        </LinearLayout>
+    </RelativeLayout>
+</FrameLayout>

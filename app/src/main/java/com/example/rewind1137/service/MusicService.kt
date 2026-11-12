@@ -5,14 +5,14 @@ import android.app.NotificationChannel
 import android.app.NotificationManager
 import android.app.PendingIntent
 import android.content.Intent
+import android.content.res.ColorStateList
 import android.graphics.Bitmap
-import android.graphics.ImageDecoder
 import android.os.Build
 import android.os.Bundle
-import android.provider.MediaStore
 import android.widget.RemoteViews
 import androidx.annotation.OptIn
 import androidx.core.app.NotificationCompat
+import androidx.core.graphics.ColorUtils
 import androidx.media.app.NotificationCompat.MediaStyle
 import androidx.media3.common.MediaItem
 import androidx.media3.common.Player
@@ -21,24 +21,31 @@ import androidx.media3.session.CommandButton
 import androidx.media3.session.MediaNotification
 import androidx.media3.session.MediaSession
 import androidx.media3.session.MediaSessionService
+import androidx.media3.session.SessionCommand
+import androidx.media3.session.SessionResult
 import com.example.rewind1137.MainActivity
 import com.example.rewind1137.R
 import com.example.rewind1137.data.model.Song
 import com.example.rewind1137.utils.AlbumArtUtils
 import com.example.rewind1137.utils.MusicPlayerManager
+import com.example.rewind1137.utils.NotificationGlowUtils
 import com.example.rewind1137.utils.SongBitmapLoader
 import com.example.rewind1137.viewmodel.PlaybackMode
 import com.example.rewind1137.viewmodel.PlaybackStateHolder
 import com.example.rewind1137.widget.RewindWidgetRegistry
 import com.example.rewind1137.widget.RewindWidgetState
+import com.example.rewind1137.widget.roundWidgetArtwork
 import com.example.rewind1137.data.repository.SettingsRepository
 import com.google.common.collect.ImmutableList
+import com.google.common.util.concurrent.Futures
+import com.google.common.util.concurrent.ListenableFuture
 import com.google.common.util.concurrent.MoreExecutors
 import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
@@ -58,6 +65,7 @@ class MusicService : MediaSessionService() {
 
     private var mediaSession: MediaSession? = null
     private var isForegroundStarted = false
+    private var lastLikeLayoutState: Boolean? = null
 
     companion object {
         const val CHANNEL_ID = "rewind_media_channel"
@@ -77,6 +85,65 @@ class MusicService : MediaSessionService() {
     private val serviceScope = CoroutineScope(Dispatchers.Main + SupervisorJob())
     private val bitmapExecutor = MoreExecutors.listeningDecorator(Executors.newSingleThreadExecutor())
 
+    private val mediaSessionCallback = object : MediaSession.Callback {
+        override fun onConnect(
+            session: MediaSession,
+            controller: MediaSession.ControllerInfo
+        ): MediaSession.ConnectionResult {
+            val commands = MediaSession.ConnectionResult.DEFAULT_SESSION_COMMANDS
+                .buildUpon()
+                .add(SessionCommand(ACTION_TOGGLE_FAVORITE, Bundle.EMPTY))
+                .add(SessionCommand(ACTION_CLOSE, Bundle.EMPTY))
+                .build()
+
+            return MediaSession.ConnectionResult.AcceptedResultBuilder(session)
+                .setAvailableSessionCommands(commands)
+                .setCustomLayout(
+                    ImmutableList.of(likeCommandButton(isCurrentFavorite()), closeCommandButton())
+                )
+                .build()
+        }
+
+        override fun onCustomCommand(
+            session: MediaSession,
+            controller: MediaSession.ControllerInfo,
+            customCommand: SessionCommand,
+            args: Bundle
+        ): ListenableFuture<SessionResult> {
+            val handled = handleAction(customCommand.customAction)
+            if (handled && customCommand.customAction != ACTION_CLOSE) refreshWidgetState()
+            return Futures.immediateFuture(
+                SessionResult(
+                    if (handled) SessionResult.RESULT_SUCCESS
+                    else SessionResult.RESULT_ERROR_NOT_SUPPORTED
+                )
+            )
+        }
+    }
+
+    private fun likeCommandButton(isFavorite: Boolean): CommandButton =
+        CommandButton.Builder()
+            .setDisplayName(if (isFavorite) "Quitar de favoritos" else "Agregar a favoritos")
+            .setIconResId(
+                if (isFavorite) R.drawable.ic_notif_heart_on else R.drawable.ic_notif_heart_off
+            )
+            .setSessionCommand(SessionCommand(ACTION_TOGGLE_FAVORITE, Bundle.EMPTY))
+            .build()
+
+    private fun closeCommandButton(): CommandButton =
+        CommandButton.Builder()
+            .setDisplayName("Cerrar reproductor")
+            .setIconResId(R.drawable.ic_notif_close)
+            .setSessionCommand(SessionCommand(ACTION_CLOSE, Bundle.EMPTY))
+            .build()
+
+    private fun isCurrentFavorite(): Boolean {
+        val state = playbackStateHolder.state.value
+        val song = state.currentSong
+            ?: state.filteredSongs.firstOrNull { it.id == state.currentSongId }
+        return song != null && state.favoriteSongIds.contains(song.id)
+    }
+
     @OptIn(UnstableApi::class)
     override fun onCreate() {
         super.onCreate()
@@ -86,7 +153,13 @@ class MusicService : MediaSessionService() {
 
         mediaSession = MediaSession.Builder(this, sharedPlayer)
             .setBitmapLoader(SongBitmapLoader(this, bitmapExecutor))
+            .setCallback(mediaSessionCallback)
             .build()
+
+        mediaSession?.setCustomLayout(
+            ImmutableList.of(likeCommandButton(false), closeCommandButton())
+        )
+        lastLikeLayoutState = false
 
         sharedPlayer.addListener(object : Player.Listener {
             override fun onMediaItemTransition(mediaItem: MediaItem?, reason: Int) {
@@ -123,6 +196,16 @@ class MusicService : MediaSessionService() {
                     lastSignature = signature
                     lastNotificationMs = now
                     updateNotification()
+                }
+            }
+        }
+
+        serviceScope.launch {
+            settingsRepository.favoriteSongIdsFlow.collect { favorites ->
+                if (playbackStateHolder.state.value.favoriteSongIds != favorites) {
+                    playbackStateHolder.update { it.copy(favoriteSongIds = favorites) }
+                    updateNotification()
+                    refreshWidgetState()
                 }
             }
         }
@@ -173,6 +256,7 @@ class MusicService : MediaSessionService() {
             ?: uiState.filteredSongs.firstOrNull { it.id == uiState.currentSongId }
             ?: uiState.filteredSongs.getOrNull(uiState.currentSongIndex)
         val albumArt = loadAlbumArt(activeSong)
+        val glow = NotificationGlowUtils.build(albumArt)
 
         remoteViews.setTextViewText(R.id.notification_title, activeSong?.title ?: "Rewind 1137")
         remoteViews.setTextViewText(R.id.notification_artist, activeSong?.artist ?: "")
@@ -196,6 +280,20 @@ class MusicService : MediaSessionService() {
         if (albumArt != null) {
             remoteViews.setImageViewBitmap(R.id.notification_album_art, albumArt)
             expandedViews.setImageViewBitmap(R.id.notification_expanded_art, albumArt)
+        }
+
+        if (glow.background != null) {
+            remoteViews.setImageViewBitmap(R.id.notification_glow, glow.background)
+            expandedViews.setImageViewBitmap(R.id.notification_expanded_glow, glow.background)
+        }
+
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+            val accentTint = ColorStateList.valueOf(glow.accent)
+            val trackTint = ColorStateList.valueOf(ColorUtils.setAlphaComponent(glow.accent, 56))
+            remoteViews.setColorStateList(R.id.notification_progress, "setProgressTintList", accentTint)
+            remoteViews.setColorStateList(R.id.notification_progress, "setProgressBackgroundTintList", trackTint)
+            expandedViews.setColorStateList(R.id.notification_expanded_progress, "setProgressTintList", accentTint)
+            expandedViews.setColorStateList(R.id.notification_expanded_progress, "setProgressBackgroundTintList", trackTint)
         }
 
         val isFav = activeSong?.let { uiState.favoriteSongIds.contains(it.id) } ?: false
@@ -237,6 +335,19 @@ class MusicService : MediaSessionService() {
         expandedViews.setImageViewResource(R.id.notification_expanded_btn_next, notifNext)
         expandedViews.setImageViewResource(R.id.notification_expanded_btn_mode, notifMode)
         expandedViews.setImageViewResource(R.id.notification_expanded_btn_close, notifClose)
+
+        // Mantiene sincronizados los botones del control multimedia del sistema
+        // (Android 13+) con el estado real de favorito.
+        if (lastLikeLayoutState != isFav) {
+            lastLikeLayoutState = isFav
+            mediaSession?.setCustomLayout(
+                ImmutableList.of(likeCommandButton(isFav), closeCommandButton())
+            )
+        }
+
+        // Tinte dinámico del icono de modo con el color dominante de la portada.
+        remoteViews.setInt(R.id.notification_btn_mode, "setColorFilter", glow.accent)
+        expandedViews.setInt(R.id.notification_expanded_btn_mode, "setColorFilter", glow.accent)
 
         val pendingIntents = mapOf(
             R.id.notification_btn_like to createFavoriteIntent(activeSong),
@@ -323,6 +434,7 @@ class MusicService : MediaSessionService() {
                     )
             )
             .setOngoing(uiState.isPlaying)
+            .setColor(glow.accent)
             .setVisibility(NotificationCompat.VISIBILITY_PUBLIC)
             .build()
     }
@@ -380,32 +492,7 @@ class MusicService : MediaSessionService() {
     }
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
-        when (intent?.action) {
-            ACTION_PLAY_PAUSE -> MusicPlayerManager.togglePlayPause()
-            ACTION_NEXT -> MusicPlayerManager.skipNext()
-            ACTION_PREVIOUS -> MusicPlayerManager.skipPrevious()
-            ACTION_TOGGLE_MODE -> {
-                sendBroadcast(Intent("ACTION_TOGGLE_MODE").setPackage(packageName))
-            }
-            ACTION_TOGGLE_FAVORITE -> {
-                val songId = intent.getLongExtra("SONG_ID", -1L)
-                if (songId != -1L) {
-                    val current = playbackStateHolder.state.value.favoriteSongIds
-                    val updated = if (current.contains(songId)) current - songId else current + songId
-                    playbackStateHolder.update { it.copy(favoriteSongIds = updated) }
-                    serviceScope.launch {
-                        runCatching { settingsRepository.saveFavoriteSongIds(updated) }
-                    }
-                    updateNotification()
-                }
-            }
-            ACTION_CLOSE -> {
-                if (MusicPlayerManager.isPlaying()) MusicPlayerManager.togglePlayPause()
-                stopForeground(STOP_FOREGROUND_REMOVE)
-                isForegroundStarted = false
-                stopSelf()
-            }
-        }
+        handleAction(intent?.action, intent?.getLongExtra("SONG_ID", -1L) ?: -1L)
         if (MusicPlayerManager.isPlaying() && !isForegroundStarted) {
             isForegroundStarted = true
             mediaSession?.let { session ->
@@ -423,9 +510,50 @@ class MusicService : MediaSessionService() {
         return super.onStartCommand(intent, flags, startId)
     }
 
+    private fun handleAction(action: String?, songId: Long = -1L): Boolean {
+        when (action) {
+            ACTION_PLAY_PAUSE -> MusicPlayerManager.togglePlayPause()
+            ACTION_NEXT -> MusicPlayerManager.skipNext()
+            ACTION_PREVIOUS -> MusicPlayerManager.skipPrevious()
+            ACTION_TOGGLE_MODE ->
+                sendBroadcast(Intent("ACTION_TOGGLE_MODE").setPackage(packageName))
+            ACTION_TOGGLE_FAVORITE -> {
+                val targetId = songId.takeIf { it != -1L }
+                    ?: playbackStateHolder.state.value.currentSongId
+                    ?: -1L
+                if (targetId != -1L) toggleFavorite(targetId)
+            }
+            ACTION_CLOSE -> closePlayback()
+            else -> return false
+        }
+        return true
+    }
+
+    private fun toggleFavorite(songId: Long) {
+        serviceScope.launch {
+            // Lee siempre la copia persistida para no borrar favoritos cuando
+            // el servicio arranca en frío desde el widget.
+            val stored = runCatching { settingsRepository.favoriteSongIdsFlow.first() }
+                .getOrElse { playbackStateHolder.state.value.favoriteSongIds }
+            val updated = if (stored.contains(songId)) stored - songId else stored + songId
+            playbackStateHolder.update { it.copy(favoriteSongIds = updated) }
+            runCatching { settingsRepository.saveFavoriteSongIds(updated) }
+            updateNotification()
+            refreshWidgetState()
+        }
+    }
+
+    private fun closePlayback() {
+        if (MusicPlayerManager.isPlaying()) MusicPlayerManager.togglePlayPause()
+        stopForeground(STOP_FOREGROUND_REMOVE)
+        isForegroundStarted = false
+        stopSelf()
+    }
+
     private fun refreshWidgetState() {
         RewindWidgetState.refresh(playbackStateHolder.state.value)
-        RewindWidgetState.refresh(MusicPlayerManager.getPlayer(this))
+        RewindWidgetState.refreshPlayback(MusicPlayerManager.getPlayer(this))
+        RewindWidgetState.save(this)
         val state = playbackStateHolder.state.value
         val song = state.currentSong
             ?: state.filteredSongs.firstOrNull { it.id == state.currentSongId }
@@ -443,7 +571,7 @@ class MusicService : MediaSessionService() {
                         )
                     }.getOrNull()
                 }
-                RewindWidgetState.albumArt = art
+                RewindWidgetState.albumArt = art?.let { roundWidgetArtwork(it) }
                 RewindWidgetRegistry.updateAll(this@MusicService)
             }
         }

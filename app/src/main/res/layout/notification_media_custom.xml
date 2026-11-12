@@ -1,195 +1,216 @@
 <?xml version="1.0" encoding="utf-8"?>
-<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
-    android:background="#181414"
-    android:padding="12dp">
+    android:background="@drawable/notif_bg_fallback">
 
-    <!-- Header Block: Artwork, Track Meta Info & Close X Button -->
-    <RelativeLayout
-        android:id="@+id/header_container"
+    <!-- Luz ambiental dinámica generada desde la carátula -->
+    <ImageView
+        android:id="@+id/notification_glow"
         android:layout_width="match_parent"
-        android:layout_height="wrap_content">
+        android:layout_height="match_parent"
+        android:contentDescription="@null"
+        android:scaleType="centerCrop" />
 
-        <!-- Album Artwork with App Icon Badge -->
-        <FrameLayout
-            android:id="@+id/art_frame"
-            android:layout_width="60dp"
-            android:layout_height="60dp"
-            android:layout_alignParentStart="true"
-            android:layout_centerVertical="true">
+    <View
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:background="@drawable/notif_scrim" />
 
-            <ImageView
-                android:id="@+id/notification_album_art"
-                android:layout_width="match_parent"
-                android:layout_height="match_parent"
-                android:scaleType="centerCrop"
-                android:src="@drawable/ic_launcher_background" />
-
-            <ImageView
-                android:id="@+id/notification_badge_icon"
-                android:layout_width="18dp"
-                android:layout_height="18dp"
-                android:layout_gravity="bottom|start"
-                android:src="@mipmap/ic_launcher_round" />
-        </FrameLayout>
-
-        <!-- Close / Dismiss Button (X) Top-Right -->
-        <ImageButton
-            android:id="@+id/notification_btn_close"
-            android:layout_width="32dp"
-            android:layout_height="32dp"
-            android:layout_alignParentEnd="true"
-            android:layout_alignParentTop="true"
-            android:background="?android:attr/selectableItemBackgroundBorderless"
-            android:src="@drawable/ic_notif_close"
-            android:contentDescription="Eliminar notificación" />
-
-        <!-- Title & Artist Info Block -->
-        <LinearLayout
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_toEndOf="@id/art_frame"
-            android:layout_toStartOf="@id/notification_btn_close"
-            android:layout_centerVertical="true"
-            android:orientation="vertical"
-            android:paddingStart="12dp"
-            android:paddingEnd="8dp">
-
-            <TextView
-                android:id="@+id/notification_title"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:text="Título de canción"
-                android:textColor="#FFFFFF"
-                android:textSize="15sp"
-                android:textStyle="bold"
-                android:singleLine="true"
-                android:ellipsize="end" />
-
-            <TextView
-                android:id="@+id/notification_artist"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:text="Artista"
-                android:textColor="#B0BEC5"
-                android:textSize="12sp"
-                android:singleLine="true"
-                android:ellipsize="end"
-                android:layout_marginTop="2dp" />
-        </LinearLayout>
-    </RelativeLayout>
-
-    <!-- Progress Track Section -->
     <RelativeLayout
-        android:id="@+id/progress_container"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:layout_below="@id/header_container"
-        android:layout_marginTop="10dp">
+        android:padding="12dp">
 
-        <TextView
-            android:id="@+id/notification_time_current"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_alignParentStart="true"
-            android:layout_centerVertical="true"
-            android:text="00:00"
-            android:textColor="#90A4AE"
-            android:textSize="10sp" />
-
-        <TextView
-            android:id="@+id/notification_time_total"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_alignParentEnd="true"
-            android:layout_centerVertical="true"
-            android:text="00:00"
-            android:textColor="#90A4AE"
-            android:textSize="10sp" />
-
-        <ProgressBar
-            android:id="@+id/notification_progress"
-            style="?android:attr/progressBarStyleHorizontal"
+        <!-- Header Block: Artwork, Track Meta Info & Close X Button -->
+        <RelativeLayout
+            android:id="@+id/header_container"
             android:layout_width="match_parent"
-            android:layout_height="4dp"
-            android:layout_centerVertical="true"
-            android:layout_toEndOf="@id/notification_time_current"
-            android:layout_toStartOf="@id/notification_time_total"
-            android:layout_marginLeft="8dp"
-            android:layout_marginRight="8dp"
-            android:max="100"
-            android:progress="0"
-            android:progressTint="#E91E63"
-            android:progressBackgroundTint="#33FFFFFF" />
-    </RelativeLayout>
+            android:layout_height="wrap_content">
 
-    <!-- 5-Button Custom Action Row -->
-    <LinearLayout
-        android:layout_width="match_parent"
-        android:layout_height="44dp"
-        android:layout_below="@id/progress_container"
-        android:layout_marginTop="8dp"
-        android:orientation="horizontal"
-        android:gravity="center"
-        android:weightSum="5">
+            <!-- Album Artwork with App Icon Badge -->
+            <FrameLayout
+                android:id="@+id/art_frame"
+                android:layout_width="60dp"
+                android:layout_height="60dp"
+                android:layout_alignParentStart="true"
+                android:layout_centerVertical="true">
 
-        <!-- 1. Heart / Like Button -->
-        <ImageButton
-            android:id="@+id/notification_btn_like"
-            android:layout_width="0dp"
-            android:layout_height="match_parent"
-            android:layout_weight="1"
-            android:background="?android:attr/selectableItemBackgroundBorderless"
-            android:src="@drawable/ic_notif_heart_off"
-            android:contentDescription="Favorito" />
+                <ImageView
+                    android:id="@+id/notification_album_art"
+                    android:layout_width="match_parent"
+                    android:layout_height="match_parent"
+                    android:scaleType="centerCrop"
+                    android:src="@drawable/ic_launcher_background" />
 
-        <!-- 2. Skip Previous Button -->
-        <ImageButton
-            android:id="@+id/notification_btn_prev"
-            android:layout_width="0dp"
-            android:layout_height="match_parent"
-            android:layout_weight="1"
-            android:background="?android:attr/selectableItemBackgroundBorderless"
-            android:src="@drawable/ic_notif_prev"
-            android:contentDescription="Anterior" />
+                <ImageView
+                    android:id="@+id/notification_badge_icon"
+                    android:layout_width="18dp"
+                    android:layout_height="18dp"
+                    android:layout_gravity="bottom|start"
+                    android:src="@mipmap/ic_launcher_round" />
+            </FrameLayout>
 
-        <!-- 3. Play / Pause Button in Circular Container background -->
-        <FrameLayout
-            android:layout_width="0dp"
-            android:layout_height="match_parent"
-            android:layout_weight="1">
-
+            <!-- Close / Dismiss Button (X) Top-Right -->
             <ImageButton
-                android:id="@+id/notification_btn_play_pause"
-                android:layout_width="40dp"
-                android:layout_height="40dp"
-                android:layout_gravity="center"
-                android:background="@drawable/bg_notif_play_btn"
-                android:src="@drawable/ic_notif_play"
-                android:contentDescription="Reproducir / Pausa" />
-        </FrameLayout>
+                android:id="@+id/notification_btn_close"
+                android:layout_width="32dp"
+                android:layout_height="32dp"
+                android:layout_alignParentEnd="true"
+                android:layout_alignParentTop="true"
+                android:background="?android:attr/selectableItemBackgroundBorderless"
+                android:contentDescription="Cerrar notificación"
+                android:src="@drawable/ic_notif_close"
+                android:tint="#CCFFFFFF" />
 
-        <!-- 4. Skip Next Button -->
-        <ImageButton
-            android:id="@+id/notification_btn_next"
-            android:layout_width="0dp"
-            android:layout_height="match_parent"
-            android:layout_weight="1"
-            android:background="?android:attr/selectableItemBackgroundBorderless"
-            android:src="@drawable/ic_notif_next"
-            android:contentDescription="Siguiente" />
+            <!-- Title & Artist Info Block -->
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_centerVertical="true"
+                android:layout_toEndOf="@id/art_frame"
+                android:layout_toStartOf="@id/notification_btn_close"
+                android:orientation="vertical"
+                android:paddingStart="12dp"
+                android:paddingEnd="8dp">
 
-        <!-- 5. Mode Toggle Button (Secuencial / Aleatorio / Repetir) -->
-        <ImageButton
-            android:id="@+id/notification_btn_mode"
-            android:layout_width="0dp"
-            android:layout_height="match_parent"
-            android:layout_weight="1"
-            android:background="?android:attr/selectableItemBackgroundBorderless"
-            android:src="@drawable/ic_notif_mode_repeat"
-            android:contentDescription="Modo de rewindducción" />
+                <TextView
+                    android:id="@+id/notification_title"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:ellipsize="end"
+                    android:singleLine="true"
+                    android:text="Título de canción"
+                    android:textColor="#FFFFFF"
+                    android:textSize="15sp"
+                    android:textStyle="bold" />
 
-    </LinearLayout>
+                <TextView
+                    android:id="@+id/notification_artist"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="2dp"
+                    android:ellipsize="end"
+                    android:singleLine="true"
+                    android:text="Artista"
+                    android:textColor="#C9C3D8"
+                    android:textSize="12sp" />
+            </LinearLayout>
+        </RelativeLayout>
 
-</RelativeLayout>
+        <!-- Progress Track Section -->
+        <RelativeLayout
+            android:id="@+id/progress_container"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_below="@id/header_container"
+            android:layout_marginTop="10dp">
+
+            <TextView
+                android:id="@+id/notification_time_current"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_alignParentStart="true"
+                android:layout_centerVertical="true"
+                android:text="00:00"
+                android:textColor="#B0A8C4"
+                android:textSize="10sp" />
+
+            <TextView
+                android:id="@+id/notification_time_total"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_alignParentEnd="true"
+                android:layout_centerVertical="true"
+                android:text="00:00"
+                android:textColor="#B0A8C4"
+                android:textSize="10sp" />
+
+            <ProgressBar
+                android:id="@+id/notification_progress"
+                style="?android:attr/progressBarStyleHorizontal"
+                android:layout_width="match_parent"
+                android:layout_height="4dp"
+                android:layout_centerVertical="true"
+                android:layout_marginLeft="8dp"
+                android:layout_marginRight="8dp"
+                android:layout_toEndOf="@id/notification_time_current"
+                android:layout_toStartOf="@id/notification_time_total"
+                android:max="100"
+                android:progress="0"
+                android:progressBackgroundTint="#33FFFFFF"
+                android:progressTint="#FFB388FE" />
+        </RelativeLayout>
+
+        <!-- 5-Button Custom Action Row -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="44dp"
+            android:layout_below="@id/progress_container"
+            android:layout_marginTop="8dp"
+            android:gravity="center"
+            android:orientation="horizontal"
+            android:weightSum="5">
+
+            <!-- 1. Heart / Like Button -->
+            <ImageButton
+                android:id="@+id/notification_btn_like"
+                android:layout_width="0dp"
+                android:layout_height="match_parent"
+                android:layout_weight="1"
+                android:background="?android:attr/selectableItemBackgroundBorderless"
+                android:contentDescription="Favorito"
+                android:src="@drawable/ic_notif_heart_off" />
+
+            <!-- 2. Skip Previous Button -->
+            <ImageButton
+                android:id="@+id/notification_btn_prev"
+                android:layout_width="0dp"
+                android:layout_height="match_parent"
+                android:layout_weight="1"
+                android:background="?android:attr/selectableItemBackgroundBorderless"
+                android:contentDescription="Anterior"
+                android:src="@drawable/ic_notif_prev"
+                android:tint="#F2FFFFFF" />
+
+            <!-- 3. Play / Pause Button in Circular Container background -->
+            <FrameLayout
+                android:layout_width="0dp"
+                android:layout_height="match_parent"
+                android:layout_weight="1">
+
+                <ImageButton
+                    android:id="@+id/notification_btn_play_pause"
+                    android:layout_width="40dp"
+                    android:layout_height="40dp"
+                    android:layout_gravity="center"
+                    android:background="@drawable/bg_notif_play_btn"
+                    android:contentDescription="Reproducir / Pausa"
+                    android:src="@drawable/ic_notif_play"
+                    android:tint="#FFFFFFFF" />
+            </FrameLayout>
+
+            <!-- 4. Skip Next Button -->
+            <ImageButton
+                android:id="@+id/notification_btn_next"
+                android:layout_width="0dp"
+                android:layout_height="match_parent"
+                android:layout_weight="1"
+                android:background="?android:attr/selectableItemBackgroundBorderless"
+                android:contentDescription="Siguiente"
+                android:src="@drawable/ic_notif_next"
+                android:tint="#F2FFFFFF" />
+
+            <!-- 5. Mode Toggle Button (Secuencial / Aleatorio / Repetir) -->
+            <ImageButton
+                android:id="@+id/notification_btn_mode"
+                android:layout_width="0dp"
+                android:layout_height="match_parent"
+                android:layout_weight="1"
+                android:background="?android:attr/selectableItemBackgroundBorderless"
+                android:contentDescription="Modo de reproducción"
+                android:src="@drawable/ic_notif_mode_repeat"
+                android:tint="#FFB388FE" />
+        </LinearLayout>
+    </RelativeLayout>
+</FrameLayout>

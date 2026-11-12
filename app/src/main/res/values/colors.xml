@@ -10,5 +10,8 @@
     <color name="widget_pill_pressed">#FF3E365A</color>
     <color name="widget_pill_primary">#FF7C4DFF</color>
     <color name="widget_art_bg">#FF2A2538</color>
+    <color name="widget_heart_on">#FFFF5C8A</color>
+    <color name="widget_heart_off">#FFA9A0BD</color>
+    <color name="widget_icon_on_primary">#FFFFFFFF</color>
     <color name="launch_window_bg">#FF0A0C10</color>
 </resources>
