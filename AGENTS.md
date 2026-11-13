@@ -14,5 +14,4 @@
 
 ## Notas
 - Sin Control de Versiones (no es repo git).
-- Para las playlists privadas de Spotify se requiere `SPOTIFY_CLIENT_ID` en `gradle.properties` (BuildConfig).
 - minSdk 24, targetSdk 37, Compose Material3 + Hilt + Room + Media3.

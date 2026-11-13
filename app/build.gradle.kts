@@ -19,12 +19,6 @@ android {
         versionName = "2.0"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
-
-        buildConfigField(
-            "String",
-            "SPOTIFY_CLIENT_ID",
-            "\"${providers.gradleProperty("SPOTIFY_CLIENT_ID").getOrElse("")}\""
-        )
     }
 
     signingConfigs {

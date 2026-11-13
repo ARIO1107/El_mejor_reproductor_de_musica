@@ -36,9 +36,6 @@ import com.example.rewind1137.ui.theme.RewindAppTheme
 import com.example.rewind1137.viewmodel.LibraryViewModel
 import com.example.rewind1137.viewmodel.PlayerViewModel
 import com.example.rewind1137.viewmodel.SettingsViewModel
-import androidx.lifecycle.lifecycleScope
-import com.example.rewind1137.spotify.SpotifyAuthManager
-import kotlinx.coroutines.launch
 import dagger.hilt.android.AndroidEntryPoint
 import java.io.File
 import androidx.compose.foundation.rememberScrollState
@@ -61,8 +58,6 @@ class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         enableEdgeToEdge()
         super.onCreate(savedInstanceState)
-        SpotifyAuthManager.init(this)
-        handleSpotifyAuthIntent(intent)
         val crashLog = readCrashLogFile(this)
 
         setContent {
@@ -230,16 +225,5 @@ class MainActivity : ComponentActivity() {
     override fun onNewIntent(intent: Intent) {
         super.onNewIntent(intent)
         setIntent(intent)
-        handleSpotifyAuthIntent(intent)
-    }
-
-    private fun handleSpotifyAuthIntent(intent: Intent?) {
-        val data = intent?.data ?: return
-        if (data.scheme == "rewind" && data.host == "spotify-callback") {
-            val code = data.getQueryParameter("code")
-            lifecycleScope.launch {
-                SpotifyAuthManager.handleAuthResult(this@MainActivity, code)
-            }
-        }
     }
 }
