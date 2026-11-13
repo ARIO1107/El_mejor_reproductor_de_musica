@@ -20,7 +20,7 @@ import java.util.concurrent.atomic.AtomicBoolean
  */
 object ThumbnailPrefetcher {
 
-    private const val WORKERS = 4
+    private const val WORKERS = 6
 
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
     private val highPriority = Channel<Long>(Channel.UNLIMITED)
