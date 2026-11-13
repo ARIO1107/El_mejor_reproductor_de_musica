@@ -28,7 +28,7 @@ object AlbumArtUtils {
     private val cacheSize = (maxMemory / 4).coerceIn(16 * 1024, 192 * 1024)
 
     /** Tamano unico para todas las miniaturas (lista y cuadricula). */
-    const val THUMBNAIL_ART_SIZE = 320
+    const val THUMBNAIL_ART_SIZE = 288
 
     private val memoryCache = object : LruCache<Long, Bitmap>(cacheSize) {
         override fun sizeOf(key: Long, value: Bitmap): Int {
@@ -60,7 +60,16 @@ object AlbumArtUtils {
             sample *= 2
         }
 
-        val opts = BitmapFactory.Options().apply { inSampleSize = sample }
+        val opts = BitmapFactory.Options().apply {
+            inSampleSize = sample
+            // Las miniaturas no necesitan canal alfa: RGB_565 usa la mitad de
+            // memoria y decodifica mas rapido, lo que mantiene fluida la
+            // cuadricula y permite que quepan muchas mas portadas en cache.
+            if (maxSize <= THUMBNAIL_ART_SIZE) {
+                inPreferredConfig = Bitmap.Config.RGB_565
+                inDither = false
+            }
+        }
         return BitmapFactory.decodeByteArray(art, 0, art.size, opts)
     }
 

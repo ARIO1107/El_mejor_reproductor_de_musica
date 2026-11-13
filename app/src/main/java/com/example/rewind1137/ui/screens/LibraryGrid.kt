@@ -141,7 +141,10 @@ fun LibraryGrid(
         val songs = libraryUiState.filteredSongs
         if (songs.isEmpty()) return@LaunchedEffect
 
-        ThumbnailPrefetcher.prefetch(context, songs.take(160), highPriority = false)
+        // Se precarga toda la biblioteca en segundo plano (la ventana visible
+        // siempre tiene prioridad), asi el desplazamiento rapido no encuentra
+        // portadas sin decodificar.
+        ThumbnailPrefetcher.prefetch(context, songs, highPriority = false)
 
         snapshotFlow<Pair<Int, Int>?> {
             if (isGridView) {
