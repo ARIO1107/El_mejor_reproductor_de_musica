@@ -59,6 +59,7 @@ import androidx.compose.ui.unit.sp
 import com.example.rewind1137.data.model.Song
 import com.example.rewind1137.ui.components.EmptyStateIllustration
 import com.example.rewind1137.ui.components.SongItem
+import com.example.rewind1137.utils.ThumbnailPrefetcher
 import com.example.rewind1137.viewmodel.LibraryUiState
 import com.example.rewind1137.viewmodel.NowPlayingAnimation
 import com.example.rewind1137.viewmodel.PlayerUiState
@@ -222,6 +223,11 @@ fun SearchPage(
                         song.album.contains(query, ignoreCase = true)
                 }
             }
+        }
+
+        val prefetchContext = LocalContext.current.applicationContext
+        LaunchedEffect(searchResults) {
+            ThumbnailPrefetcher.prefetch(prefetchContext, searchResults.take(160))
         }
 
         if (searchResults.isEmpty()) {

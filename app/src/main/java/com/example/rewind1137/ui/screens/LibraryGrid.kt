@@ -68,6 +68,7 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
+import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -75,6 +76,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
@@ -88,11 +90,14 @@ import com.example.rewind1137.ui.components.MultiSelectActionBar
 import com.example.rewind1137.ui.components.NowPlayingIndicator
 import com.example.rewind1137.ui.components.SelectionBadge
 import com.example.rewind1137.ui.components.SongItem
+import com.example.rewind1137.utils.ThumbnailPrefetcher
 import com.example.rewind1137.viewmodel.LibraryFilter
 import com.example.rewind1137.viewmodel.LibraryUiState
 import com.example.rewind1137.viewmodel.NowPlayingAnimation
 import com.example.rewind1137.viewmodel.PlayerUiState
 import com.example.rewind1137.viewmodel.SortOption
+import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.flow.filterNotNull
 
 @Composable
 fun LibraryGrid(
@@ -120,12 +125,46 @@ fun LibraryGrid(
     val gridState = rememberLazyGridState()
     val coroutineScope = rememberCoroutineScope()
     val hapticFeedback = LocalHapticFeedback.current
+    val context = LocalContext.current
 
     LaunchedEffect(isMultiSelectMode) {
         onSelectionModeChange(isMultiSelectMode)
     }
     DisposableEffect(Unit) {
         onDispose { onSelectionModeChange(false) }
+    }
+
+    // Precarga de portadas: primero la ventana visible y lo que viene encima,
+    // y despues el resto en segundo plano. Con esto la cuadricula de 5 columnas
+    // se desplaza sin cargas visibles.
+    LaunchedEffect(isGridView, libraryUiState.filteredSongs) {
+        val songs = libraryUiState.filteredSongs
+        if (songs.isEmpty()) return@LaunchedEffect
+
+        ThumbnailPrefetcher.prefetch(context, songs.take(160), highPriority = false)
+
+        snapshotFlow<Pair<Int, Int>?> {
+            if (isGridView) {
+                val visible = gridState.layoutInfo.visibleItemsInfo
+                if (visible.isEmpty()) null else visible.first().index to visible.last().index
+            } else {
+                val visible = listState.layoutInfo.visibleItemsInfo
+                if (visible.isEmpty()) null else visible.first().index to visible.last().index
+            }
+        }
+            .filterNotNull()
+            .distinctUntilChanged()
+            .collect { range ->
+                val from = (range.first - 10).coerceAtLeast(0)
+                val to = (range.second + 40).coerceAtMost(songs.lastIndex)
+                if (from <= to) {
+                    ThumbnailPrefetcher.prefetch(
+                        context = context,
+                        songs = songs.subList(from, to + 1),
+                        highPriority = true
+                    )
+                }
+            }
     }
 
     Box(modifier = modifier.fillMaxSize()) {
