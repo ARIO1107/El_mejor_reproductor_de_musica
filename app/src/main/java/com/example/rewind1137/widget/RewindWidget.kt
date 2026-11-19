@@ -132,6 +132,26 @@ private fun WidgetContentMedium(
                     durationMs = durationMs,
                     visible = hasSong
                 )
+                if (hasSong) {
+                    Spacer(GlanceModifier.height(3.dp))
+                    Row(modifier = GlanceModifier.fillMaxWidth()) {
+                        Text(
+                            text = formatWidgetTime(progressMs),
+                            style = TextStyle(
+                                fontSize = 9.sp,
+                                color = ColorProvider(R.color.widget_subtext)
+                            ),
+                            modifier = GlanceModifier.defaultWeight()
+                        )
+                        Text(
+                            text = formatWidgetTime(durationMs),
+                            style = TextStyle(
+                                fontSize = 9.sp,
+                                color = ColorProvider(R.color.widget_subtext)
+                            )
+                        )
+                    }
+                }
             }
             Spacer(GlanceModifier.width(6.dp))
             WidgetLikeButton(

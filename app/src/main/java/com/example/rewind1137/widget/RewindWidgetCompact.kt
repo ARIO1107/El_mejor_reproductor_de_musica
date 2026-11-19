@@ -52,8 +52,9 @@ private fun WidgetContentCompact(
     art: android.graphics.Bitmap?
 ) {
     val height = LocalSize.current.height.takeIf { it > 0.dp } ?: 56.dp
-    val artSize = (height - 12.dp).coerceIn(28.dp, 44.dp)
     val buttonSize = (height - 20.dp).coerceIn(26.dp, 38.dp)
+    val baseArtSize = (height - 12.dp).coerceIn(28.dp, 44.dp)
+    val artSize = if (buttonSize > 38.dp) (baseArtSize - 4.dp).coerceAtLeast(28.dp) else baseArtSize
 
     Row(
         modifier = GlanceModifier
@@ -104,5 +105,7 @@ private fun WidgetContentCompact(
         }
         Spacer(GlanceModifier.width(6.dp))
         WidgetPlayPauseButton(isPlaying = isPlaying && hasSong, size = buttonSize)
+        Spacer(GlanceModifier.width(4.dp))
+        WidgetNextButton(size = buttonSize)
     }
 }

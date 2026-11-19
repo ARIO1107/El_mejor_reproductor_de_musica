@@ -197,7 +197,7 @@ private fun WidgetContentLarge(
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 Text(
-                    text = "A CONTINUACION",
+                    text = "A CONTINUACIÓN",
                     style = TextStyle(
                         fontSize = 9.sp,
                         fontWeight = FontWeight.Bold,
