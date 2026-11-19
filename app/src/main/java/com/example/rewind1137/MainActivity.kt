@@ -56,10 +56,18 @@ import androidx.compose.ui.unit.sp
 @AndroidEntryPoint
 class MainActivity : ComponentActivity() {
 
+    companion object {
+        const val EXTRA_OPEN_PLAYER_SHEET = "open_player_sheet"
+    }
+
+    /** Petición de un solo uso: la consume AppNavGraph al abrir el PlayerSheet. */
+    private val openPlayerSheetState = mutableStateOf(false)
+
     override fun onCreate(savedInstanceState: Bundle?) {
         enableEdgeToEdge()
         super.onCreate(savedInstanceState)
         val crashLog = readCrashLogFile(this)
+        openPlayerSheetState.value = intent.getBooleanExtra(EXTRA_OPEN_PLAYER_SHEET, false)
 
         setContent {
             var showCrashReport by remember { mutableStateOf(crashLog != null) }
@@ -192,7 +200,9 @@ class MainActivity : ComponentActivity() {
                 val navController = rememberNavController()
 
                 AppNavGraph(
-                    navController = navController
+                    navController = navController,
+                    openPlayerSheetRequest = openPlayerSheetState.value,
+                    onOpenPlayerSheetConsumed = { openPlayerSheetState.value = false }
                 )
             }
             }
@@ -226,5 +236,6 @@ class MainActivity : ComponentActivity() {
     override fun onNewIntent(intent: Intent) {
         super.onNewIntent(intent)
         setIntent(intent)
+        openPlayerSheetState.value = intent.getBooleanExtra(EXTRA_OPEN_PLAYER_SHEET, false)
     }
 }

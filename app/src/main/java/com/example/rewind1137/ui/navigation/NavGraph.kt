@@ -72,7 +72,9 @@ fun AppNavGraph(
     navController: NavHostController,
     playerViewModel: PlayerViewModel = hiltViewModel(),
     libraryViewModel: LibraryViewModel = hiltViewModel(),
-    settingsViewModel: SettingsViewModel = hiltViewModel()
+    settingsViewModel: SettingsViewModel = hiltViewModel(),
+    openPlayerSheetRequest: Boolean = false,
+    onOpenPlayerSheetConsumed: () -> Unit = {}
 ) {
     val playerUiState by playerViewModel.uiState.collectAsState()
     // Se crea aqui pero solo lo leen las vistas de progreso, para que las 10
@@ -96,6 +98,14 @@ fun AppNavGraph(
             libraryViewModel.refreshSongs()
         }
         songsPendingDelete = null
+    }
+
+    // La notificación (y el widget) piden abrir el PlayerSheet con un extra de un solo uso.
+    LaunchedEffect(openPlayerSheetRequest) {
+        if (openPlayerSheetRequest) {
+            playerViewModel.setPlayerSheetExpanded(true)
+            onOpenPlayerSheetConsumed()
+        }
     }
 
     LaunchedEffect(
