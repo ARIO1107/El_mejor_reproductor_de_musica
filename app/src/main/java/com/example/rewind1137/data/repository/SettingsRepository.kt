@@ -51,6 +51,7 @@ class SettingsRepository(private val context: Context) {
         val LIBRARY_SORT_OPTION = stringPreferencesKey("library_sort_option")
         val LIBRARY_FILTER = stringPreferencesKey("library_filter")
         val HIFI_MODE_ENABLED = booleanPreferencesKey("hifi_mode_enabled")
+        val SEARCH_LOOP_RESULTS = booleanPreferencesKey("search_loop_results")
     }
 
     val userSettingsFlow: Flow<UserSettings> = context.dataStore.data.map { preferences ->
@@ -86,6 +87,7 @@ class SettingsRepository(private val context: Context) {
             NowPlayingAnimation.BARS
         }
         val hifiModeEnabled = preferences[PreferencesKeys.HIFI_MODE_ENABLED] ?: false
+        val searchLoopResults = preferences[PreferencesKeys.SEARCH_LOOP_RESULTS] ?: false
 
         UserSettings(
             excludeShortAudios = excludeClips,
@@ -104,7 +106,8 @@ class SettingsRepository(private val context: Context) {
             virtualizerEnabled = virtualizerEnabled,
             albumArtMode = albumArtMode,
             nowPlayingAnimation = nowPlayingAnimation,
-            hifiModeEnabled = hifiModeEnabled
+            hifiModeEnabled = hifiModeEnabled,
+            searchLoopResults = searchLoopResults
         )
     }
 
@@ -221,6 +224,12 @@ class SettingsRepository(private val context: Context) {
     suspend fun setHifiMode(enabled: Boolean) {
         context.dataStore.edit { preferences ->
             preferences[PreferencesKeys.HIFI_MODE_ENABLED] = enabled
+        }
+    }
+
+    suspend fun setSearchLoopResults(enabled: Boolean) {
+        context.dataStore.edit { preferences ->
+            preferences[PreferencesKeys.SEARCH_LOOP_RESULTS] = enabled
         }
     }
 
@@ -442,6 +451,7 @@ class SettingsRepository(private val context: Context) {
             put("replayGainEnabled", settings.replayGainEnabled)
             put("replayGainPreamp", settings.replayGainPreamp.toDouble())
             put("hifiModeEnabled", settings.hifiModeEnabled)
+            put("searchLoopResults", settings.searchLoopResults)
             put("albumArtMode", settings.albumArtMode.name)
             put("nowPlayingAnimation", settings.nowPlayingAnimation.name)
             put("playbackMode", playbackMode.name)
@@ -482,6 +492,7 @@ class SettingsRepository(private val context: Context) {
             if (json.has("replayGainEnabled")) preferences[PreferencesKeys.REPLAY_GAIN_ENABLED] = json.getBoolean("replayGainEnabled")
             if (json.has("replayGainPreamp")) preferences[PreferencesKeys.REPLAY_GAIN_PREAMP] = json.getDouble("replayGainPreamp").toFloat()
             if (json.has("hifiModeEnabled")) preferences[PreferencesKeys.HIFI_MODE_ENABLED] = json.getBoolean("hifiModeEnabled")
+            if (json.has("searchLoopResults")) preferences[PreferencesKeys.SEARCH_LOOP_RESULTS] = json.getBoolean("searchLoopResults")
             if (json.has("excludeShortClips")) preferences[PreferencesKeys.EXCLUDE_SHORT_CLIPS] = json.getBoolean("excludeShortClips")
             if (json.has("albumArtMode")) preferences[PreferencesKeys.ALBUM_ART_MODE] = json.getString("albumArtMode")
             if (json.has("nowPlayingAnimation")) preferences[PreferencesKeys.NOW_PLAYING_ANIMATION] = json.getString("nowPlayingAnimation")

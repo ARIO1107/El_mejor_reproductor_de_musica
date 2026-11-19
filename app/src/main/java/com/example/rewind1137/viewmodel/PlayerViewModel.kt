@@ -235,11 +235,12 @@ class PlayerViewModel @Inject constructor(
         }
     }
 
-    fun playSongAtIndex(index: Int, songs: List<Song>) {
+    fun playSongAtIndex(index: Int, songs: List<Song>, playbackModeOverride: PlaybackMode? = null) {
         if (songs.isEmpty()) return
         val song = songs.getOrNull(index.coerceIn(0, songs.size - 1)) ?: return
+        val effectiveMode = playbackModeOverride ?: _uiState.value.playbackMode
         unshuffledQueue = songs
-        val sequence = buildPlaybackSequence(_uiState.value.playbackMode, songs, index)
+        val sequence = buildPlaybackSequence(effectiveMode, songs, index)
 
         currentSongPlaylist = sequence
         queueManager.setCurrentIndex(0)
@@ -261,7 +262,7 @@ class PlayerViewModel @Inject constructor(
             setMediaItems(initialMediaItems, 0, 0L)
             prepare()
             play()
-            applyRepeatModeToPlayer()
+            applyRepeatModeToPlayer(effectiveMode)
         }
 
         if (sequence.size > initialBatchSize) {
@@ -281,7 +282,8 @@ class PlayerViewModel @Inject constructor(
                 currentPositionMs = 0L,
                 durationMs = song.duration,
                 playbackQueue = sequence,
-                displayQueue = sequence
+                displayQueue = sequence,
+                playbackMode = effectiveMode
             )
         }
         publishPosition(0L)

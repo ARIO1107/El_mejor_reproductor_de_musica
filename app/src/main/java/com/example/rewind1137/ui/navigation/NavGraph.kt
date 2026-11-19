@@ -317,11 +317,22 @@ fun AppNavGraph(
                     val index = libraryUiState.filteredSongs.indexOfFirst { it.id == song.id }
                     if (index >= 0) playerViewModel.playSongAtIndex(index, libraryUiState.filteredSongs)
                 },
-                onPlaySong = { song ->
-                    val index = libraryUiState.songsList.indexOfFirst { it.id == song.id }
-                    if (index >= 0) playerViewModel.playSongAtIndex(index, libraryUiState.songsList)
+                onPlaySong = { song, results ->
+                    if (settingsUiState.userSettings.searchLoopResults) {
+                        val index = results.indexOfFirst { it.id == song.id }
+                        if (index >= 0) {
+                            playerViewModel.playSongAtIndex(index, results, com.example.rewind1137.viewmodel.PlaybackMode.SEQUENTIAL)
+                        }
+                    } else {
+                        val index = libraryUiState.songsList.indexOfFirst { it.id == song.id }
+                        if (index >= 0) {
+                            playerViewModel.playSongAtIndex(index, libraryUiState.songsList, com.example.rewind1137.viewmodel.PlaybackMode.SEQUENTIAL)
+                        }
+                    }
                 },
-                nowPlayingAnimation = settingsUiState.userSettings.nowPlayingAnimation
+                nowPlayingAnimation = settingsUiState.userSettings.nowPlayingAnimation,
+                searchLoopResults = settingsUiState.userSettings.searchLoopResults,
+                onSearchLoopResultsChange = { settingsViewModel.setSearchLoopResults(it) }
             )
         }
 

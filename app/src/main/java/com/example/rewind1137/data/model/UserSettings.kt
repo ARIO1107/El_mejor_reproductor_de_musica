@@ -20,5 +20,6 @@ data class UserSettings(
     val virtualizerEnabled: Boolean = false,
     val albumArtMode: AlbumArtMode = AlbumArtMode.STATIC,
     val nowPlayingAnimation: NowPlayingAnimation = NowPlayingAnimation.BARS,
-    val hifiModeEnabled: Boolean = false
+    val hifiModeEnabled: Boolean = false,
+    val searchLoopResults: Boolean = false
 )

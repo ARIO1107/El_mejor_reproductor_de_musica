@@ -119,6 +119,10 @@ class SettingsViewModel @Inject constructor(
         }
     }
 
+    fun setSearchLoopResults(enabled: Boolean) {
+        viewModelScope.launch { settingsRepository.setSearchLoopResults(enabled) }
+    }
+
     fun clearAppCache(context: Context) {
         viewModelScope.launch {
             try {
