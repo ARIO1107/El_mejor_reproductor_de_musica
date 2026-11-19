@@ -86,18 +86,21 @@ fun SearchPage(
     val focusManager = LocalFocusManager.current
 
     var searchQuery by remember { mutableStateOf(TextFieldValue(libraryUiState.searchQuery)) }
+    var searchSubmitted by remember { mutableStateOf(false) }
 
     fun hideKeyboard() {
         keyboardController?.hide()
         focusManager.clearFocus()
     }
 
-    fun setQuery(text: String, hideKeyboardAfter: Boolean = false) {
+    fun setQuery(text: String, submitted: Boolean = false) {
         searchQuery = TextFieldValue(text = text, selection = TextRange(text.length))
-        if (hideKeyboardAfter) hideKeyboard()
+        searchSubmitted = submitted
+        if (submitted) hideKeyboard()
     }
 
     fun submitSearch() {
+        searchSubmitted = true
         onSearchQueryChange(searchQuery.text)
         hideKeyboard()
     }
@@ -111,9 +114,8 @@ fun SearchPage(
     val voiceLauncher = rememberLauncherForActivityResult(ActivityResultContracts.StartActivityForResult()) { result ->
         if (result.resultCode == Activity.RESULT_OK) {
             result.data?.getStringArrayListExtra(RecognizerIntent.EXTRA_RESULTS)?.firstOrNull()?.let { text ->
-                setQuery(text)
+                setQuery(text, submitted = true)
                 onSearchQueryChange(text)
-                hideKeyboard()
             }
         }
     }
@@ -154,7 +156,10 @@ fun SearchPage(
         ) {
             OutlinedTextField(
                 value = searchQuery,
-                onValueChange = { searchQuery = it },
+                onValueChange = {
+                    searchQuery = it
+                    searchSubmitted = false
+                },
                 modifier = Modifier.weight(1f),
                 placeholder = {
                     Text(
@@ -249,7 +254,7 @@ fun SearchPage(
                 items(libraryUiState.recentSearches, key = { it }) { q ->
                     FilterChip(
                         selected = false,
-                        onClick = { setQuery(q, hideKeyboardAfter = true) },
+                        onClick = { setQuery(q, submitted = true) },
                         label = {
                             Text(
                                 text = q,
@@ -305,6 +310,8 @@ fun SearchPage(
             ThumbnailPrefetcher.prefetch(prefetchContext, searchResults.take(60))
         }
 
+        val showSuggestions = !searchSubmitted && querySuggestions.isNotEmpty()
+
         if (query.isBlank()) {
             Box(
                 modifier = Modifier
@@ -319,7 +326,7 @@ fun SearchPage(
                     modifier = Modifier.fillMaxSize()
                 )
             }
-        } else if (searchResults.isEmpty() && querySuggestions.isEmpty()) {
+        } else if (searchResults.isEmpty() && !showSuggestions) {
             Box(
                 modifier = Modifier
                     .weight(1f)
@@ -342,7 +349,7 @@ fun SearchPage(
                     horizontalArrangement = Arrangement.spacedBy(12.dp),
                     verticalArrangement = Arrangement.spacedBy(16.dp)
                 ) {
-                    if (querySuggestions.isNotEmpty()) {
+                    if (showSuggestions) {
                         item(key = "header_suggestions", span = { GridItemSpan(maxLineSpan) }) {
                             SectionHeader("Sugerencias")
                         }
@@ -354,7 +361,7 @@ fun SearchPage(
                                     Icons.Default.Search
                                 },
                                 text = suggestion,
-                                onClick = { setQuery(suggestion, hideKeyboardAfter = true) }
+                                onClick = { setQuery(suggestion, submitted = true) }
                             )
                         }
                     }
@@ -381,7 +388,7 @@ fun SearchPage(
                     modifier = Modifier.weight(1f),
                     verticalArrangement = Arrangement.spacedBy(10.dp)
                 ) {
-                    if (querySuggestions.isNotEmpty()) {
+                    if (showSuggestions) {
                         item(key = "header_suggestions") { SectionHeader("Sugerencias") }
                         items(querySuggestions, key = { "suggestion_$it" }) { suggestion ->
                             SuggestionRow(
@@ -391,7 +398,7 @@ fun SearchPage(
                                     Icons.Default.Search
                                 },
                                 text = suggestion,
-                                onClick = { setQuery(suggestion, hideKeyboardAfter = true) }
+                                onClick = { setQuery(suggestion, submitted = true) }
                             )
                         }
                     }

@@ -650,6 +650,8 @@ class MusicService : MediaSessionService() {
     private fun closePlayback() {
         if (MusicPlayerManager.isPlaying()) MusicPlayerManager.togglePlayPause()
         widgetTickJob?.cancel()
+        widgetUpdateJob?.cancel()
+        widgetUpdatePending = false
         RewindWidgetState.clear(this)
         runBlocking { RewindWidgetRegistry.updateAll(this@MusicService) }
         stopForeground(STOP_FOREGROUND_REMOVE)
@@ -660,32 +662,58 @@ class MusicService : MediaSessionService() {
     private fun refreshWidgetState() {
         RewindWidgetState.refresh(playbackStateHolder.state.value)
         RewindWidgetState.refreshPlayback(MusicPlayerManager.getPlayer(this))
-        RewindWidgetState.save(this)
         val state = playbackStateHolder.state.value
         val song = state.currentSong
             ?: state.filteredSongs.firstOrNull { it.id == state.currentSongId }
             ?: state.filteredSongs.getOrNull(state.currentSongIndex)
-        runCatching {
-            serviceScope.launch {
-                val art = song?.let {
-                    runCatching {
-                        AlbumArtUtils.getSongArtwork(
-                            this@MusicService,
-                            it.id,
-                            it.uri,
-                            it.albumArtUri,
-                            WIDGET_ART_SIZE
-                        )
-                    }.getOrNull()
-                }
+        val songId = song?.id ?: -1L
+        serviceScope.launch {
+            val art = song?.let {
+                runCatching {
+                    AlbumArtUtils.getSongArtwork(
+                        this@MusicService,
+                        it.id,
+                        it.uri,
+                        it.albumArtUri,
+                        WIDGET_ART_SIZE
+                    )
+                }.getOrNull()
+            }
+            val currentId = playbackStateHolder.state.value.currentSongId
+                ?: playbackStateHolder.state.value.currentSong?.id
+                ?: -1L
+            if (currentId == songId) {
                 RewindWidgetState.albumArt = art?.let { roundWidgetArtwork(it) }
-                RewindWidgetRegistry.updateAll(this@MusicService)
+                requestWidgetUpdate(immediate = false)
             }
         }
+        requestWidgetUpdate(immediate = false)
         scheduleWidgetTicker()
     }
 
     private var widgetTickJob: kotlinx.coroutines.Job? = null
+    private var widgetUpdateJob: kotlinx.coroutines.Job? = null
+    private var widgetUpdatePending: Boolean = false
+
+    private fun requestWidgetUpdate(immediate: Boolean = false) {
+        if (immediate) {
+            widgetUpdateJob?.cancel()
+            widgetUpdatePending = false
+            widgetUpdateJob = serviceScope.launch {
+                RewindWidgetState.save(this@MusicService)
+                runCatching { RewindWidgetRegistry.updateAll(this@MusicService) }
+            }
+            return
+        }
+        if (widgetUpdatePending) return
+        widgetUpdatePending = true
+        widgetUpdateJob = serviceScope.launch {
+            delay(500)
+            widgetUpdatePending = false
+            RewindWidgetState.save(this@MusicService)
+            runCatching { RewindWidgetRegistry.updateAll(this@MusicService) }
+        }
+    }
 
     private fun scheduleWidgetTicker() {
         widgetTickJob?.cancel()
@@ -697,8 +725,7 @@ class MusicService : MediaSessionService() {
                 if (!player.isPlaying) break
                 RewindWidgetState.progressMs = player.currentPosition.coerceAtLeast(0L)
                 RewindWidgetState.durationMs = player.duration.coerceAtLeast(0L)
-                RewindWidgetState.save(this@MusicService)
-                RewindWidgetRegistry.updateAll(this@MusicService)
+                requestWidgetUpdate(immediate = false)
             }
         }
     }
@@ -737,6 +764,7 @@ class MusicService : MediaSessionService() {
 
     override fun onDestroy() {
         widgetTickJob?.cancel()
+        widgetUpdateJob?.cancel()
         if (isForegroundStarted) {
             stopForeground(STOP_FOREGROUND_REMOVE)
             isForegroundStarted = false
