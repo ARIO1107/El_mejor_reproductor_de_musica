@@ -101,6 +101,7 @@ class MusicService : MediaSessionService() {
         const val ACTION_CLOSE = "ACTION_CLOSE"
         const val ACTION_TOGGLE_FAVORITE = "ACTION_TOGGLE_FAVORITE"
         const val ACTION_TOGGLE_MODE = "ACTION_TOGGLE_MODE"
+        const val ACTION_RESTORE_SESSION = "ACTION_RESTORE_SESSION"
 
         private const val NOTIF_ART_SIZE = 288
 
@@ -557,6 +558,14 @@ class MusicService : MediaSessionService() {
     }
 
     private fun handleAction(action: String?, songId: Long = -1L): Boolean {
+        if (action == null) return false
+
+        val needsQueue = action == ACTION_PLAY_PAUSE || action == ACTION_NEXT ||
+            action == ACTION_PREVIOUS || action == ACTION_TOGGLE_MODE || action == ACTION_TOGGLE_FAVORITE
+        if (needsQueue) {
+            ensureRestoredForControl()
+        }
+
         when (action) {
             ACTION_PLAY_PAUSE -> MusicPlayerManager.togglePlayPause()
             ACTION_NEXT -> MusicPlayerManager.skipNext()
@@ -572,13 +581,44 @@ class MusicService : MediaSessionService() {
             ACTION_TOGGLE_FAVORITE -> {
                 val targetId = songId.takeIf { it != -1L }
                     ?: playbackStateHolder.state.value.currentSongId
+                    ?: playbackStateHolder.state.value.currentSong?.id
                     ?: -1L
                 if (targetId != -1L) toggleFavorite(targetId)
             }
             ACTION_CLOSE -> closePlayback()
+            ACTION_RESTORE_SESSION -> restoreSession()
             else -> return false
         }
         return true
+    }
+
+    private fun ensureRestoredForControl() {
+        if (MusicPlayerManager.currentQueue().isNotEmpty()) return
+        restoreSession()
+    }
+
+    private fun restoreSession() {
+        if (MusicPlayerManager.currentQueue().isNotEmpty()) return
+        if (!MusicPlayerManager.restore(this)) return
+        val player = MusicPlayerManager.getPlayer(this)
+        val queue = MusicPlayerManager.currentQueue()
+        if (queue.isEmpty()) return
+        val index = MusicPlayerManager.currentIndex().coerceIn(0, queue.lastIndex)
+        val song = queue.getOrNull(index)
+        playbackStateHolder.update { state ->
+            state.copy(
+                filteredSongs = queue,
+                currentSong = song,
+                currentSongId = song?.id,
+                currentSongIndex = index,
+                isPlaying = player.isPlaying,
+                currentPositionMs = player.currentPosition.coerceAtLeast(0L),
+                durationMs = player.duration.coerceAtLeast(0L),
+                playbackMode = MusicPlayerManager.currentPlaybackMode()
+            )
+        }
+        updateNotification()
+        refreshWidgetState()
     }
 
     private fun toggleFavorite(songId: Long) {

@@ -92,6 +92,8 @@ object MusicPlayerManager {
 
     fun currentIndex(): Int = exoPlayer?.currentMediaItemIndex?.coerceAtLeast(0) ?: 0
 
+    fun currentPlaybackMode(): PlaybackMode = playbackMode
+
     fun hasSavedSession(context: Context): Boolean = PlaybackSessionStore.hasSession(context)
 
     fun playQueue(songs: List<Song>, startIndex: Int, play: Boolean = true) {
