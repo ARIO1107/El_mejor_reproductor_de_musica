@@ -13,9 +13,11 @@ import androidx.media3.common.MediaMetadata
 import androidx.media3.common.Player
 import androidx.media3.common.util.UnstableApi
 import androidx.media3.exoplayer.ExoPlayer
+import com.example.rewind1137.audio.HifiAudioPolicy
 import com.example.rewind1137.audio.VocalRemovalRenderersFactory
 import com.example.rewind1137.audio.VocalRemovalState
 import com.example.rewind1137.data.model.Song
+import com.example.rewind1137.data.model.UserSettings
 import com.example.rewind1137.viewmodel.PlaybackMode
 
 /**
@@ -40,6 +42,8 @@ object MusicPlayerManager {
     private var replayGainEnabled = false
     private var replayGainPreamp: Float = 1.0f
     private var baseVolume = 1f
+    private var floatOutputEnabled = false
+    private var hifiModeEnabled = false
 
     private val crossfadeRunnable = Runnable { startOverlap() }
 
@@ -76,10 +80,14 @@ object MusicPlayerManager {
                 .setUsage(C.USAGE_MEDIA)
                 .build()
 
-            exoPlayer = ExoPlayer.Builder(
-                context.applicationContext,
-                VocalRemovalRenderersFactory(context.applicationContext)
-            )
+            val factory = runCatching {
+                VocalRemovalRenderersFactory(context.applicationContext, floatOutputEnabled)
+            }.getOrElse {
+                floatOutputEnabled = false
+                VocalRemovalRenderersFactory(context.applicationContext, false)
+            }
+
+            exoPlayer = ExoPlayer.Builder(context.applicationContext, factory)
                 .setAudioAttributes(audioAttributes, true)
                 .setHandleAudioBecomingNoisy(true)
                 .build()
@@ -339,6 +347,38 @@ object MusicPlayerManager {
 
     fun isReplayGainEnabled(): Boolean = replayGainEnabled
 
+    fun setFloatOutput(enabled: Boolean) {
+        if (floatOutputEnabled == enabled) return
+        floatOutputEnabled = enabled
+        // El cambio de salida float aplica con seguridad en la próxima creación del player.
+        // Evitamos reconstruir en caliente para no romper listeners/sesión ya vinculados.
+        runCatching { auxPlayer?.release() }
+        auxPlayer = null
+    }
+
+    fun isHifiModeEnabled(): Boolean = hifiModeEnabled
+
+    fun setHifiMode(enabled: Boolean, settings: UserSettings) {
+        hifiModeEnabled = enabled
+        val effective = HifiAudioPolicy.resolve(settings, VocalRemovalState.enabled)
+        VocalRemovalState.enabled = effective.vocalRemoval
+        setReplayGain(effective.replayGain, settings.replayGainPreamp)
+        setFloatOutput(effective.floatOutput)
+
+        val context = auxContext
+        if (effective.replayGain && context != null) {
+            val player = exoPlayer
+            val uri = player?.currentMediaItem?.localConfiguration?.uri
+            if (uri != null) {
+                runCatching { applyReplayGainFor(context, uri) }
+            }
+        }
+        if (!effective.replayGain) {
+            baseVolume = 1f
+            if (!isFadingOut) exoPlayer?.volume = baseVolume
+        }
+    }
+
     /** Fracción 0..1 del volumen base (temporizador, ducking). */
     fun setVolume(volume: Float) {
         exoPlayer?.volume = (baseVolume * volume.coerceIn(0f, 1f)).coerceIn(0f, 2f)
@@ -437,7 +477,10 @@ object MusicPlayerManager {
     private fun ensureAux(): ExoPlayer {
         auxPlayer?.let { return it }
         val context = auxContext ?: error("El reproductor todavía no tiene contexto")
-        val created = ExoPlayer.Builder(context, VocalRemovalRenderersFactory(context))
+        val factory = runCatching {
+            VocalRemovalRenderersFactory(context, floatOutputEnabled)
+        }.getOrElse { VocalRemovalRenderersFactory(context, false) }
+        val created = ExoPlayer.Builder(context, factory)
             .setAudioAttributes(
                 AudioAttributes.Builder()
                     .setContentType(C.AUDIO_CONTENT_TYPE_MUSIC)

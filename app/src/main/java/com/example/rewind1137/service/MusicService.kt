@@ -195,6 +195,10 @@ class MusicService : MediaSessionService() {
             override fun onMediaItemTransition(mediaItem: MediaItem?, reason: Int) {
                 updateNotification()
                 refreshWidgetState()
+                val uri = mediaItem?.localConfiguration?.uri
+                if (uri != null) {
+                    runCatching { MusicPlayerManager.applyReplayGainFor(this@MusicService, uri) }
+                }
             }
 
             override fun onIsPlayingChanged(isPlaying: Boolean) {
@@ -238,6 +242,11 @@ class MusicService : MediaSessionService() {
                     refreshWidgetState()
                 }
             }
+        }
+
+        // Aplica ReplayGain a la pista actual si ya hay una cargada al iniciar el servicio.
+        sharedPlayer.currentMediaItem?.localConfiguration?.uri?.let { uri ->
+            runCatching { MusicPlayerManager.applyReplayGainFor(this, uri) }
         }
 
         setMediaNotificationProvider(object : MediaNotification.Provider {
@@ -616,6 +625,9 @@ class MusicService : MediaSessionService() {
                 durationMs = player.duration.coerceAtLeast(0L),
                 playbackMode = MusicPlayerManager.currentPlaybackMode()
             )
+        }
+        song?.uri?.let { uri ->
+            runCatching { MusicPlayerManager.applyReplayGainFor(this, uri) }
         }
         updateNotification()
         refreshWidgetState()

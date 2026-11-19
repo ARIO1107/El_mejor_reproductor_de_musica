@@ -5,10 +5,13 @@ import android.content.Context
 import android.content.Intent
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
+import com.example.rewind1137.audio.AudioEffectManager
+import com.example.rewind1137.audio.VocalRemovalState
 import com.example.rewind1137.data.model.AppThemeMode
 import com.example.rewind1137.data.model.EqualizerPreset
 import com.example.rewind1137.data.model.UserSettings
 import com.example.rewind1137.data.repository.SettingsRepository
+import com.example.rewind1137.utils.MusicPlayerManager
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
@@ -25,7 +28,8 @@ data class SettingsUiState(
 @HiltViewModel
 class SettingsViewModel @Inject constructor(
     application: Application,
-    private val settingsRepository: SettingsRepository
+    private val settingsRepository: SettingsRepository,
+    private val audioEffectManager: AudioEffectManager
 ) : AndroidViewModel(application) {
 
     private val _uiState = MutableStateFlow(SettingsUiState())
@@ -97,7 +101,22 @@ class SettingsViewModel @Inject constructor(
     }
 
     fun setHifiMode(enabled: Boolean) {
-        viewModelScope.launch { settingsRepository.setHifiMode(enabled) }
+        viewModelScope.launch {
+            settingsRepository.setHifiMode(enabled)
+            val settings = _uiState.value.userSettings.copy(hifiModeEnabled = enabled)
+            MusicPlayerManager.setHifiMode(enabled, settings)
+
+            if (enabled) {
+                audioEffectManager.setEqualizerEnabled(false)
+                audioEffectManager.setBassBoostEnabled(false)
+                audioEffectManager.setVirtualizerEnabled(false)
+                VocalRemovalState.enabled = false
+            } else {
+                audioEffectManager.setEqualizerEnabled(settings.equalizerEnabled)
+                audioEffectManager.setBassBoostEnabled(settings.bassBoostEnabled)
+                audioEffectManager.setVirtualizerEnabled(settings.virtualizerEnabled)
+            }
+        }
     }
 
     fun clearAppCache(context: Context) {

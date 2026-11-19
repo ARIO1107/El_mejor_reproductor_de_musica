@@ -120,7 +120,10 @@ class PlayerViewModel @Inject constructor(
     private fun initReplayGainFromSettings() {
         viewModelScope.launch {
             settingsRepository.userSettingsFlow.first().let { settings ->
-                MusicPlayerManager.setReplayGain(settings.replayGainEnabled, settings.replayGainPreamp)
+                MusicPlayerManager.setHifiMode(settings.hifiModeEnabled, settings)
+                if (!settings.hifiModeEnabled) {
+                    MusicPlayerManager.setReplayGain(settings.replayGainEnabled, settings.replayGainPreamp)
+                }
             }
         }
     }
@@ -613,10 +616,18 @@ class PlayerViewModel @Inject constructor(
                         activeEqPreset = preset
                         audioEffectManager.applyPreset(preset)
                     }
-                    audioEffectManager.setEqualizerEnabled(settings.equalizerEnabled)
-                    audioEffectManager.setBassBoostEnabled(settings.bassBoostEnabled)
-                    audioEffectManager.setVirtualizerEnabled(settings.virtualizerEnabled)
-                    _uiState.update { it.copy(isEqualizerEnabled = settings.equalizerEnabled, isBassBoostEnabled = settings.bassBoostEnabled) }
+                    if (settings.hifiModeEnabled) {
+                        audioEffectManager.setEqualizerEnabled(false)
+                        audioEffectManager.setBassBoostEnabled(false)
+                        audioEffectManager.setVirtualizerEnabled(false)
+                        com.example.rewind1137.audio.VocalRemovalState.enabled = false
+                        _uiState.update { it.copy(isEqualizerEnabled = false, isBassBoostEnabled = false) }
+                    } else {
+                        audioEffectManager.setEqualizerEnabled(settings.equalizerEnabled)
+                        audioEffectManager.setBassBoostEnabled(settings.bassBoostEnabled)
+                        audioEffectManager.setVirtualizerEnabled(settings.virtualizerEnabled)
+                        _uiState.update { it.copy(isEqualizerEnabled = settings.equalizerEnabled, isBassBoostEnabled = settings.bassBoostEnabled) }
+                    }
                 } catch (e: Exception) {
                     Log.e("PlayerViewModel", "Failed to restore EQ preset", e)
                 }

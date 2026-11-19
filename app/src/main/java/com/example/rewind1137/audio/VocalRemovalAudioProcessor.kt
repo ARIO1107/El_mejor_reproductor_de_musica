@@ -26,8 +26,14 @@ object VocalRemovalState {
  * Sustituye a DefaultRenderersFactory.buildAudioSink añadiendo el procesador,
  * manteniendo el resto del pipeline de audio de Media3 intacto.
  */
-class VocalRemovalRenderersFactory(context: Context) :
-    DefaultRenderersFactory(context.applicationContext) {
+class VocalRemovalRenderersFactory(
+    context: Context,
+    private val floatOutput: Boolean = false
+) : DefaultRenderersFactory(context.applicationContext) {
+
+    init {
+        runCatching { setEnableAudioFloatOutput(floatOutput) }
+    }
 
     override fun buildAudioSink(
         context: Context,
@@ -35,7 +41,7 @@ class VocalRemovalRenderersFactory(context: Context) :
         enableAudioTrackPlaybackParams: Boolean
     ): AudioSink {
         return DefaultAudioSink.Builder(context.applicationContext)
-            .setEnableFloatOutput(enableFloatOutput)
+            .setEnableFloatOutput(enableFloatOutput || floatOutput)
             .setEnableAudioTrackPlaybackParams(enableAudioTrackPlaybackParams)
             .setAudioProcessors(arrayOf(VocalRemovalAudioProcessor))
             .build()
