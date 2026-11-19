@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Portada neutra para canciones sin carátula. Evita que la notificación
+     conserve la portada de la canción anterior (RemoteViews no borra una
+     imagen que no se vuelve a asignar). -->
+<layer-list xmlns:android="http://schemas.android.com/apk/res/android">
+    <item>
+        <shape android:shape="rectangle">
+            <corners android:radius="14dp" />
+            <gradient
+                android:angle="270"
+                android:startColor="#33343D"
+                android:endColor="#1D1E24" />
+        </shape>
+    </item>
+    <item
+        android:width="26dp"
+        android:height="26dp"
+        android:drawable="@drawable/ic_widget_music"
+        android:gravity="center" />
+</layer-list>

@@ -26,6 +26,8 @@ import androidx.compose.material.icons.filled.SkipNext
 import androidx.compose.material.icons.filled.SkipPrevious
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.State
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.mutableStateOf
@@ -35,18 +37,19 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.draw.drawWithContent
 import androidx.compose.ui.geometry.Rect
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.layout.boundsInWindow
 import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.platform.LocalHapticFeedback
-import androidx.compose.ui.draw.rotate
 import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.BlendMode
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.CompositingStrategy
+import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
@@ -54,6 +57,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.rewind1137.data.model.Song
 import com.example.rewind1137.viewmodel.PlaybackMode
+import kotlinx.coroutines.launch
 import java.util.Locale
 
 fun formatMillis(millis: Long): String {
@@ -67,7 +71,7 @@ fun formatMillis(millis: Long): String {
 fun MiniPlayer(
     song: Song,
     isPlaying: Boolean,
-    currentPositionMs: Long,
+    positionState: State<Long>,
     durationMs: Long,
     playbackMode: PlaybackMode,
     onSeek: (Long) -> Unit,
@@ -80,31 +84,39 @@ fun MiniPlayer(
     val hapticFeedback = LocalHapticFeedback.current
     var anchorRect by remember { mutableStateOf<Rect?>(null) }
     val currentAnchor by rememberUpdatedState(anchorRect)
-    val infiniteTransition = rememberInfiniteTransition(label = "mini_disc")
-    val rotation by infiniteTransition.animateFloat(
-        initialValue = 0f,
-        targetValue = if (isPlaying) 360f else 0f,
-        animationSpec = infiniteRepeatable(
-            animation = tween(durationMillis = 8000, easing = LinearEasing),
-            repeatMode = RepeatMode.Restart
-        ),
-        label = "mini_rotation"
-    )
-    val glowAlpha by infiniteTransition.animateFloat(
-        initialValue = 0.3f,
-        targetValue = if (isPlaying) 0.6f else 0.2f,
-        animationSpec = infiniteRepeatable(
-            animation = tween(1500, easing = FastOutSlowInEasing),
-            repeatMode = RepeatMode.Restart
-        ),
-        label = "mini_glow"
-    )
-
-    var isSeeking by remember { mutableStateOf(false) }
-    var seekPos by remember { mutableFloatStateOf(0f) }
-
-    val sliderValue = if (isSeeking) seekPos else currentPositionMs.toFloat()
-    val displayPos = if (isSeeking) seekPos.toLong() else currentPositionMs
+    // Las animaciones solo corren mientras suena musica y se leen en fases de
+    // dibujo (graphicsLayer / drawBehind), asi que no recompactan el MiniPlayer.
+    // Antes el disco y el halo giraban incluso en pausa, gastando fotogramas que
+    // le hacian falta a la cuadricula.
+    var rotation by remember { mutableFloatStateOf(0f) }
+    var glowAlpha by remember { mutableFloatStateOf(0.2f) }
+    LaunchedEffect(isPlaying) {
+        if (!isPlaying) {
+            rotation = 0f
+            glowAlpha = 0.2f
+            return@LaunchedEffect
+        }
+        launch {
+            animate(
+                initialValue = 0f,
+                targetValue = 360f,
+                animationSpec = infiniteRepeatable(
+                    animation = tween(durationMillis = 8000, easing = LinearEasing),
+                    repeatMode = RepeatMode.Restart
+                )
+            ) { value, _ -> rotation = value }
+        }
+        launch {
+            animate(
+                initialValue = 0.3f,
+                targetValue = 0.6f,
+                animationSpec = infiniteRepeatable(
+                    animation = tween(1500, easing = FastOutSlowInEasing),
+                    repeatMode = RepeatMode.Reverse
+                )
+            ) { value, _ -> glowAlpha = value }
+        }
+    }
 
     GlassmorphicContainer(
         modifier = Modifier
@@ -170,11 +182,17 @@ fun MiniPlayer(
                             )
                         }
                         if (isPlaying) {
+                            val ringColor = MaterialTheme.colorScheme.primary
                             Box(
                                 modifier = Modifier
                                     .size(44.dp)
-                                    .clip(CircleShape)
-                                    .border(2.dp, MaterialTheme.colorScheme.primary.copy(alpha = glowAlpha), CircleShape)
+                                    .drawBehind {
+                                        drawCircle(
+                                            color = ringColor.copy(alpha = glowAlpha),
+                                            radius = size.minDimension / 2f - 1.dp.toPx(),
+                                            style = Stroke(width = 2.dp.toPx())
+                                        )
+                                    }
                             )
                         }
                         SongArtworkLayers(
@@ -182,7 +200,7 @@ fun MiniPlayer(
                             modifier = Modifier
                                 .size(40.dp)
                                 .clip(CircleShape)
-                                .rotate(if (isPlaying) rotation else 0f),
+                                .graphicsLayer { rotationZ = rotation },
                             contentDescription = null,
                             placeholder = {
                                 Box(
@@ -288,32 +306,57 @@ fun MiniPlayer(
 
             Spacer(modifier = Modifier.height(2.dp))
 
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.SpaceBetween
-            ) {
-                Text(formatMillis(displayPos), fontSize = 10.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                Slider(
-                    value = sliderValue.coerceIn(0f, if (durationMs > 0) durationMs.toFloat() else 1f),
-                    onValueChange = { newPos ->
-                        isSeeking = true
-                        seekPos = newPos
-                    },
-                    onValueChangeFinished = {
-                        onSeek(seekPos.toLong())
-                        isSeeking = false
-                    },
-                    valueRange = 0f..(if (durationMs > 0) durationMs.toFloat() else 1f),
-                    modifier = Modifier.weight(1f).padding(horizontal = 8.dp).height(18.dp),
-                    colors = SliderDefaults.colors(
-                        thumbColor = MaterialTheme.colorScheme.primary,
-                        activeTrackColor = MaterialTheme.colorScheme.primary,
-                        inactiveTrackColor = MaterialTheme.colorScheme.surface
-                    )
-                )
-                Text(formatMillis(durationMs), fontSize = 10.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
-            }
+            MiniPlayerProgressRow(
+                positionState = positionState,
+                durationMs = durationMs,
+                onSeek = onSeek
+            )
         }
+    }
+}
+
+/**
+ * Barra de progreso aislada: es la unica parte del MiniPlayer que depende de la
+ * posicion de reproduccion, asi que al actualizarse 10 veces por segundo solo se
+ * recompone esta fila y no todo el reproductor.
+ */
+@Composable
+private fun MiniPlayerProgressRow(
+    positionState: State<Long>,
+    durationMs: Long,
+    onSeek: (Long) -> Unit
+) {
+    var isSeeking by remember { mutableStateOf(false) }
+    var seekPos by remember { mutableFloatStateOf(0f) }
+
+    val currentPositionMs = positionState.value
+    val sliderValue = if (isSeeking) seekPos else currentPositionMs.toFloat()
+    val displayPos = if (isSeeking) seekPos.toLong() else currentPositionMs
+
+    Row(
+        modifier = Modifier.fillMaxWidth(),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.SpaceBetween
+    ) {
+        Text(formatMillis(displayPos), fontSize = 10.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
+        Slider(
+            value = sliderValue.coerceIn(0f, if (durationMs > 0) durationMs.toFloat() else 1f),
+            onValueChange = { newPos ->
+                isSeeking = true
+                seekPos = newPos
+            },
+            onValueChangeFinished = {
+                onSeek(seekPos.toLong())
+                isSeeking = false
+            },
+            valueRange = 0f..(if (durationMs > 0) durationMs.toFloat() else 1f),
+            modifier = Modifier.weight(1f).padding(horizontal = 8.dp).height(18.dp),
+            colors = SliderDefaults.colors(
+                thumbColor = MaterialTheme.colorScheme.primary,
+                activeTrackColor = MaterialTheme.colorScheme.primary,
+                inactiveTrackColor = MaterialTheme.colorScheme.surface
+            )
+        )
+        Text(formatMillis(durationMs), fontSize = 10.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
     }
 }

@@ -2,8 +2,6 @@ package com.example.rewind1137.ui.components
 
 import android.graphics.Bitmap
 import android.net.Uri
-import androidx.compose.animation.core.animateFloatAsState
-import androidx.compose.animation.core.tween
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
@@ -25,7 +23,6 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.ImageBitmap
 import androidx.compose.ui.graphics.asImageBitmap
-import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
@@ -55,11 +52,6 @@ fun AlbumArtThumbnail(
     // carátula de álbum compartida como respaldo temporal: esa era la causa de
     // que varias canciones mostraran la misma portada al desplazarse rápido.
     val artworkBitmap = rememberThumbnailArtwork(songId, contentUri, albumArtUri)
-    val artworkAlpha by animateFloatAsState(
-        targetValue = if (artworkBitmap != null) 1f else 0f,
-        animationSpec = tween(180),
-        label = "thumbnailFade"
-    )
 
     Box(
         modifier = modifier
@@ -68,21 +60,21 @@ fun AlbumArtThumbnail(
             .background(boxColor),
         contentAlignment = Alignment.Center
     ) {
-        Icon(
-            imageVector = Icons.Default.MusicNote,
-            contentDescription = null,
-            tint = if (isCurrentSong) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant,
-            modifier = Modifier.graphicsLayer { alpha = 1f - artworkAlpha }
-        )
-
         if (artworkBitmap != null) {
+            // Sin animación de alpha ni capa gráfica por celda: al desplazar la
+            // cuadrícula cada celda nueva lanzaba un animador y creaba una capa
+            // extra, lo que provocaba tirones.
             Image(
                 bitmap = artworkBitmap,
                 contentDescription = "Portada de la canción",
                 contentScale = ContentScale.Crop,
-                modifier = Modifier
-                    .fillMaxSize()
-                    .graphicsLayer { alpha = artworkAlpha }
+                modifier = Modifier.fillMaxSize()
+            )
+        } else {
+            Icon(
+                imageVector = Icons.Default.MusicNote,
+                contentDescription = null,
+                tint = if (isCurrentSong) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant
             )
         }
 

@@ -1,6 +1,7 @@
 package com.example.rewind1137.ui.connection
 
 import android.content.ComponentName
+import android.os.Bundle
 import android.content.Context
 import androidx.annotation.OptIn
 import androidx.media3.common.MediaItem
@@ -11,6 +12,8 @@ import androidx.media3.session.MediaController
 import androidx.media3.session.SessionToken
 import com.example.rewind1137.data.model.Song
 import com.example.rewind1137.service.MusicService
+import com.example.rewind1137.utils.SongMediaExtras
+import com.example.rewind1137.utils.toMediaItem
 import com.google.common.util.concurrent.ListenableFuture
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -138,20 +141,10 @@ class PlaybackConnection @Inject constructor(
     }
 
     fun setMediaItem(song: Song) {
-        val mediaItem = MediaItem.Builder()
-            .setUri(song.uri)
-            .setMediaMetadata(
-                androidx.media3.common.MediaMetadata.Builder()
-                    .setTitle(song.title)
-                    .setArtist(song.artist)
-                    .setArtworkUri(song.albumArtUri)
-                    .build()
-            )
-            .build()
+        val mediaItem = song.toMediaItem()
 
         mediaController?.apply {
             stop()
-            clearMediaItems()
             setMediaItem(mediaItem)
             prepare()
             play()
@@ -161,24 +154,13 @@ class PlaybackConnection @Inject constructor(
     fun setQueue(songs: List<Song>, startIndex: Int = 0) {
         if (songs.isEmpty()) return
 
-        val mediaItems = songs.map { song ->
-            MediaItem.Builder()
-                .setUri(song.uri)
-                .setMediaMetadata(
-                    androidx.media3.common.MediaMetadata.Builder()
-                        .setTitle(song.title)
-                        .setArtist(song.artist)
-                        .setArtworkUri(song.albumArtUri)
-                        .build()
-                )
-                .build()
-        }
+        val mediaItems = songs.map { it.toMediaItem() }
 
         mediaController?.apply {
             stop()
-            clearMediaItems()
-            addMediaItems(mediaItems)
-            seekToDefaultPosition(startIndex)
+            // setMediaItems reemplaza la cola; clearMediaItems + addMediaItems
+            // emitia un timeline vacio intermedio.
+            setMediaItems(mediaItems, startIndex, 0L)
             prepare()
             play()
         }

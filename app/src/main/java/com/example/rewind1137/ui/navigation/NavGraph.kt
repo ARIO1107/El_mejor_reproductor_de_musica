@@ -75,6 +75,9 @@ fun AppNavGraph(
     settingsViewModel: SettingsViewModel = hiltViewModel()
 ) {
     val playerUiState by playerViewModel.uiState.collectAsState()
+    // Se crea aqui pero solo lo leen las vistas de progreso, para que las 10
+    // actualizaciones por segundo no recompongan la pantalla completa.
+    val positionState = playerViewModel.positionMs.collectAsState()
     val libraryUiState by libraryViewModel.uiState.collectAsState()
     val settingsUiState by settingsViewModel.uiState.collectAsState()
 
@@ -240,6 +243,7 @@ fun AppNavGraph(
             MainScreen(
                 libraryUiState = libraryUiState,
                 playerUiState = playerUiState,
+                positionState = positionState,
                 currentTab = currentTab,
                 onTabSelected = { tab ->
                     currentTab = tab
@@ -311,7 +315,7 @@ fun AppNavGraph(
             PlayerSheet(
                 song = currentSong,
                 isPlaying = playerUiState.isPlaying,
-                currentPositionMs = playerUiState.currentPositionMs,
+                positionState = positionState,
                 durationMs = playerUiState.durationMs,
                 playbackMode = playerUiState.playbackMode,
                 albumArtMode = settingsUiState.userSettings.albumArtMode,
@@ -492,7 +496,7 @@ fun AppNavGraph(
             PlayerSheet(
                 song = activeSong,
                 isPlaying = playerUiState.isPlaying,
-                currentPositionMs = playerUiState.currentPositionMs,
+                positionState = positionState,
                 durationMs = playerUiState.durationMs,
                 playbackMode = playerUiState.playbackMode,
                 albumArtMode = settingsUiState.userSettings.albumArtMode,

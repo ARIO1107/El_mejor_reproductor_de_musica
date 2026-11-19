@@ -1,4 +1,4 @@
-package com.example.rewind1137.utils
+﻿package com.example.rewind1137.utils
 
 import android.content.Context
 import android.graphics.Bitmap
@@ -6,6 +6,7 @@ import android.graphics.BitmapFactory
 import android.net.Uri
 import androidx.media3.common.MediaMetadata
 import androidx.media3.common.util.BitmapLoader
+import com.google.common.util.concurrent.Futures
 import com.google.common.util.concurrent.ListenableFuture
 import com.google.common.util.concurrent.ListeningExecutorService
 import java.util.concurrent.Callable
@@ -41,7 +42,7 @@ class SongBitmapLoader(
 
     override fun loadBitmap(uri: Uri): ListenableFuture<Bitmap> =
         executor.submit(Callable {
-            AlbumArtUtils.loadArtworkFromUri(context, uri, MAX_ART_SIZE)
+            AlbumArtUtils.loadArtworkFromUri(context, AlbumArtUtils.sanitizeAlbumArtUri(uri), MAX_ART_SIZE)
                 ?: throw IllegalArgumentException("No se pudo cargar la caratula")
         })
 
@@ -51,15 +52,28 @@ class SongBitmapLoader(
         val songUri = extras?.getString(SongMediaExtras.SONG_URI)?.let(Uri::parse)
         val albumArtUri = extras?.getString(SongMediaExtras.ALBUM_ART_URI)?.let(Uri::parse)
 
+        // Media3 pide metadata vacia en algunos cambios de timeline (por ejemplo
+        // al reemplazar la cola). No hay nada que cargar: se falla al instante
+        // para no encolar trabajo ni tocar la cache.
+        if (songId <= 0L) {
+            return Futures.immediateFailedFuture(
+                IllegalArgumentException("Metadata sin cancion")
+            )
+        }
+
         return executor.submit(Callable {
-            AlbumArtUtils.getSongArtworkBlocking(
+            // Solo arte propio de la cancion. La caratula de album se comparte
+            // entre todas las canciones del mismo album_id, asi que usarla como
+            // respaldo hacia que varias canciones mostraran la misma portada.
+            val resolved = AlbumArtUtils.getSongArtworkBlocking(
                 context = context,
                 songId = songId,
                 contentUri = songUri,
                 albumArtUri = albumArtUri,
-                maxSize = MAX_ART_SIZE
-            ) ?: AlbumArtUtils.loadArtworkFromUri(context, metadata.artworkUri, MAX_ART_SIZE)
-                ?: throw IllegalArgumentException("La cancion no tiene caratula")
+                maxSize = MAX_ART_SIZE,
+                allowAlbumFallback = false
+            )
+            resolved ?: throw IllegalArgumentException("La cancion no tiene caratula")
         })
     }
 

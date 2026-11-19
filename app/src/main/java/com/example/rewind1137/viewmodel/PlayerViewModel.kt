@@ -25,6 +25,7 @@ import com.example.rewind1137.utils.MusicPlayerManager
 import com.example.rewind1137.utils.SleepTimerManager
 import com.example.rewind1137.utils.SleepTimerOption
 import com.example.rewind1137.utils.SongMediaExtras
+import com.example.rewind1137.utils.toMediaItem
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
@@ -70,6 +71,19 @@ class PlayerViewModel @Inject constructor(
 
     private val _uiState = MutableStateFlow(PlayerUiState())
     val uiState: StateFlow<PlayerUiState> = _uiState.asStateFlow()
+
+    /**
+     * Posicion de reproduccion en vivo. Va en un flujo aparte para que las 10
+     * actualizaciones por segundo no recompongan toda la app (antes
+     * `PlayerUiState` cambiaba cada 100 ms y arrastraba a la biblioteca entera,
+     * provocando tirones al desplazar la cuadricula).
+     */
+    private val _positionMs = MutableStateFlow(0L)
+    val positionMs: StateFlow<Long> = _positionMs.asStateFlow()
+
+    private fun publishPosition(pos: Long) {
+        if (_positionMs.value != pos) _positionMs.value = pos
+    }
 
     val queueManager = QueueManager()
     val queuesState: StateFlow<QueuesState> = queueManager.queuesState
@@ -156,6 +170,7 @@ class PlayerViewModel @Inject constructor(
                 val newIndex = exoPlayer.currentMediaItemIndex
                 val song = currentSongPlaylist.getOrNull(newIndex)
                 if (song != null) {
+                    publishPosition(0L)
                     _uiState.update {
                         it.copy(
                             currentSong = song,
@@ -194,7 +209,7 @@ class PlayerViewModel @Inject constructor(
             positionTrackerJob = viewModelScope.launch {
                 while (true) {
                     val pos = exoPlayer.currentPosition.coerceAtLeast(0L)
-                    _uiState.update { it.copy(currentPositionMs = pos) }
+                    publishPosition(pos)
                     playbackStateHolder.update { it.copy(currentPositionMs = pos) }
                     delay(100)
                 }
@@ -236,7 +251,9 @@ class PlayerViewModel @Inject constructor(
 
         exoPlayer.apply {
             stop()
-            clearMediaItems()
+            // setMediaItems ya reemplaza la cola; un clearMediaItems previo
+            // generaba un timeline vacio intermedio que Media3 anunciaba a los
+            // controladores legacy con metadata nula (portada en blanco).
             setMediaItems(initialMediaItems, 0, 0L)
             prepare()
             play()
@@ -263,33 +280,12 @@ class PlayerViewModel @Inject constructor(
                 displayQueue = sequence
             )
         }
+        publishPosition(0L)
         startMusicService()
         loadLyrics(song)
     }
 
-    private fun songToMediaItem(song: Song): MediaItem =
-        MediaItem.Builder()
-            .setUri(song.uri)
-            .setMediaId(song.id.toString())
-            .setMediaMetadata(
-                MediaMetadata.Builder()
-                    .setTitle(song.title)
-                    .setArtist(song.artist)
-                    .setAlbumTitle(song.album)
-                    .setAlbumArtist(song.artist)
-                    // Siempre dejamos una URI para que el MediaSession pida la
-                    // caratula; el SongBitmapLoader resuelve el arte exacto.
-                    .setArtworkUri(song.albumArtUri ?: song.uri)
-                    .setExtras(
-                        Bundle().apply {
-                            putLong(SongMediaExtras.SONG_ID, song.id)
-                            putString(SongMediaExtras.SONG_URI, song.uri.toString())
-                            putString(SongMediaExtras.ALBUM_ART_URI, song.albumArtUri?.toString())
-                        }
-                    )
-                    .build()
-            )
-            .build()
+    private fun songToMediaItem(song: Song): MediaItem = song.toMediaItem()
 
     fun playNext(song: Song) {
         val state = _uiState.value
@@ -365,6 +361,7 @@ class PlayerViewModel @Inject constructor(
     fun togglePlayPause() = MusicPlayerManager.togglePlayPause()
 
     fun seekTo(positionMs: Long) {
+        publishPosition(positionMs)
         _uiState.update { it.copy(currentPositionMs = positionMs) }
         exoPlayer.seekTo(positionMs)
     }

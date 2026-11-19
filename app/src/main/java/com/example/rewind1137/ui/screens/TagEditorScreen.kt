@@ -106,6 +106,9 @@ fun TagEditorScreen(
                             isLoading = false
                             if (success) {
                                 Toast.makeText(context, "Tags guardados", Toast.LENGTH_SHORT).show()
+                                // El archivo se reescribió: la portada en caché
+                                // (memoria y disco) puede haber cambiado.
+                                com.example.rewind1137.utils.AlbumArtUtils.evictSong(context, s.id)
                                 onSongUpdated(
                                     s.copy(
                                         title = title.trim().ifBlank { s.title },

@@ -62,14 +62,14 @@ import com.example.rewind1137.ui.components.SongItem
 import com.example.rewind1137.utils.ThumbnailPrefetcher
 import com.example.rewind1137.viewmodel.LibraryUiState
 import com.example.rewind1137.viewmodel.NowPlayingAnimation
-import com.example.rewind1137.viewmodel.PlayerUiState
 import kotlinx.coroutines.flow.debounce
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun SearchPage(
     libraryUiState: LibraryUiState,
-    playerUiState: PlayerUiState,
+    currentSongId: Long?,
+    isPlaying: Boolean,
     onSearchQueryChange: (String) -> Unit,
     onPlaySong: (Song) -> Unit,
     onClearRecentSearches: () -> Unit = {},
@@ -227,7 +227,7 @@ fun SearchPage(
 
         val prefetchContext = LocalContext.current.applicationContext
         LaunchedEffect(searchResults) {
-            ThumbnailPrefetcher.prefetch(prefetchContext, searchResults.take(160))
+            ThumbnailPrefetcher.prefetch(prefetchContext, searchResults.take(60))
         }
 
         if (searchResults.isEmpty()) {
@@ -298,8 +298,8 @@ fun SearchPage(
                     gridItems(searchResults, key = { it.id }) { song ->
                         LibraryGridItem(
                             song = song,
-                            isCurrentSong = song.id == playerUiState.currentSong?.id,
-                            isPlaying = playerUiState.isPlaying,
+                            isCurrentSong = song.id == currentSongId,
+                            isPlaying = isPlaying,
                             nowPlayingAnimation = nowPlayingAnimation,
                             onClick = {
                                 hapticFeedback.performHapticFeedback(HapticFeedbackType.LongPress)
@@ -344,8 +344,8 @@ fun SearchPage(
                         ) {
                             SongItem(
                                 song = song,
-                                isCurrentSong = song.id == playerUiState.currentSong?.id,
-                                isPlaying = playerUiState.isPlaying,
+                                isCurrentSong = song.id == currentSongId,
+                                isPlaying = isPlaying,
                                 isCompact = compactList,
                                 nowPlayingAnimation = nowPlayingAnimation,
                                 onClick = {

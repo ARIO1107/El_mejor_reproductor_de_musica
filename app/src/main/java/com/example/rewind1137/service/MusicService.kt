@@ -7,11 +7,13 @@ import android.app.PendingIntent
 import android.content.Intent
 import android.content.res.ColorStateList
 import android.graphics.Bitmap
+import android.graphics.Canvas
 import android.os.Build
 import android.os.Bundle
 import android.widget.RemoteViews
 import androidx.annotation.OptIn
 import androidx.core.app.NotificationCompat
+import androidx.core.content.ContextCompat
 import androidx.core.graphics.ColorUtils
 import androidx.media.app.NotificationCompat.MediaStyle
 import androidx.media3.common.MediaItem
@@ -67,6 +69,26 @@ class MusicService : MediaSessionService() {
     private var isForegroundStarted = false
     private var lastLikeLayoutState: Boolean? = null
 
+    /** Última portada realmente aplicada a la notificación. */
+    private var shownArtSongId: Long = Long.MIN_VALUE
+    private var shownArtBitmap: Bitmap? = null
+
+    /**
+     * Marcador neutro para cuando la canción no tiene carátula. Se usa como
+     * `largeIcon` para que SystemUI no caiga al arte del MediaSession (la
+     * carátula de álbum compartida, que repetía portadas entre canciones).
+     */
+    private val placeholderArtBitmap: Bitmap by lazy {
+        val size = 512
+        val bitmap = Bitmap.createBitmap(size, size, Bitmap.Config.ARGB_8888)
+        val canvas = Canvas(bitmap)
+        ContextCompat.getDrawable(this, R.drawable.notif_art_placeholder)?.let { drawable ->
+            drawable.setBounds(0, 0, size, size)
+            drawable.draw(canvas)
+        }
+        bitmap
+    }
+
     companion object {
         const val CHANNEL_ID = "rewind_media_channel"
         const val CHANNEL_NAME = "Rewind 1137 Media Controller"
@@ -79,7 +101,13 @@ class MusicService : MediaSessionService() {
         const val ACTION_TOGGLE_FAVORITE = "ACTION_TOGGLE_FAVORITE"
         const val ACTION_TOGGLE_MODE = "ACTION_TOGGLE_MODE"
 
-        private const val NOTIF_ART_SIZE = 256
+        private const val NOTIF_ART_SIZE = 288
+
+        /** El widget muestra la portada a mayor tamano que la notificacion. */
+        private const val WIDGET_ART_SIZE = 512
+
+        /** Tamaños que ya pueden estar en caché; se reutilizan antes de decodificar. */
+        private val NOTIF_ART_CACHE_SIZES = intArrayOf(288, 512, 1024, 256)
     }
 
     private val serviceScope = CoroutineScope(Dispatchers.Main + SupervisorJob())
@@ -256,7 +284,11 @@ class MusicService : MediaSessionService() {
             ?: uiState.filteredSongs.firstOrNull { it.id == uiState.currentSongId }
             ?: uiState.filteredSongs.getOrNull(uiState.currentSongIndex)
         val albumArt = loadAlbumArt(activeSong)
-        val glow = NotificationGlowUtils.build(albumArt)
+        // Si aun no hay caratula para esta cancion se pinta un marcador neutro:
+        // RemoteViews conserva la imagen anterior y el sistema terminaria
+        // mostrando la portada de la cancion previa (portadas repetidas).
+        val shownArt = albumArt ?: if (activeSong?.id == shownArtSongId) shownArtBitmap else null
+        val glow = NotificationGlowUtils.build(shownArt)
 
         remoteViews.setTextViewText(R.id.notification_title, activeSong?.title ?: "Rewind 1137")
         remoteViews.setTextViewText(R.id.notification_artist, activeSong?.artist ?: "")
@@ -277,14 +309,26 @@ class MusicService : MediaSessionService() {
         expandedViews.setTextViewText(R.id.notification_expanded_time_current, formatMillis(currentPos))
         expandedViews.setTextViewText(R.id.notification_expanded_time_total, formatMillis(uiState.durationMs))
 
-        if (albumArt != null) {
-            remoteViews.setImageViewBitmap(R.id.notification_album_art, albumArt)
-            expandedViews.setImageViewBitmap(R.id.notification_expanded_art, albumArt)
+        if (shownArt != null) {
+            remoteViews.setImageViewBitmap(R.id.notification_album_art, shownArt)
+            expandedViews.setImageViewBitmap(R.id.notification_expanded_art, shownArt)
+            shownArtSongId = activeSong?.id ?: Long.MIN_VALUE
+            shownArtBitmap = shownArt
+        } else {
+            remoteViews.setImageViewResource(R.id.notification_album_art, R.drawable.notif_art_placeholder)
+            expandedViews.setImageViewResource(R.id.notification_expanded_art, R.drawable.notif_art_placeholder)
+            shownArtSongId = Long.MIN_VALUE
+            shownArtBitmap = null
         }
 
         if (glow.background != null) {
             remoteViews.setImageViewBitmap(R.id.notification_glow, glow.background)
             expandedViews.setImageViewBitmap(R.id.notification_expanded_glow, glow.background)
+        } else {
+            // Sin esto RemoteViews conserva el halo (la portada difuminada) de
+            // la canción anterior.
+            remoteViews.setImageViewResource(R.id.notification_glow, R.drawable.notif_bg_fallback)
+            expandedViews.setImageViewResource(R.id.notification_expanded_glow, R.drawable.notif_bg_fallback)
         }
 
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
@@ -414,7 +458,7 @@ class MusicService : MediaSessionService() {
             .setContentTitle(activeSong?.title ?: "Rewind 1137")
             .setContentText(activeSong?.artist ?: "Música")
             .setSubText(activeSong?.album)
-            .setLargeIcon(albumArt)
+            .setLargeIcon(shownArt ?: placeholderArtBitmap)
             .setCustomContentView(remoteViews)
             .setCustomBigContentView(expandedViews)
             .setContentIntent(contentIntent)
@@ -454,9 +498,9 @@ class MusicService : MediaSessionService() {
 
     private fun loadAlbumArt(song: Song?): Bitmap? {
         if (song == null) return null
-        val cached = AlbumArtUtils.getCachedArt(song.id, NOTIF_ART_SIZE)
-        if (cached != null) return cached
-
+        for (size in NOTIF_ART_CACHE_SIZES) {
+            AlbumArtUtils.getCachedArt(song.id, size)?.let { return it }
+        }
         loadAlbumArtAsync(song)
         return null
     }
@@ -567,7 +611,7 @@ class MusicService : MediaSessionService() {
                             it.id,
                             it.uri,
                             it.albumArtUri,
-                            NOTIF_ART_SIZE
+                            WIDGET_ART_SIZE
                         )
                     }.getOrNull()
                 }

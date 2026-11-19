@@ -8,7 +8,6 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.blur
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
@@ -44,7 +43,9 @@ fun GlassmorphicContainer(
             modifier = Modifier
                 .matchParentSize()
                 .clip(shape)
-                .blur(blurRadius)
+                // Sin `blur`: el fondo es un degradado plano, asi que el
+                // desenfoque no aportaba nada visual y forzaba una capa
+                // offscreen con RenderEffect en cada fotograma (tirones).
                 .background(Brush.verticalGradient(colors))
                 .border(1.dp, outlineColor.copy(alpha = borderAlpha), shape)
         )

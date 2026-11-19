@@ -94,7 +94,7 @@ private data class SongExtraInfo(
 fun PlayerSheet(
     song: Song?,
     isPlaying: Boolean,
-    currentPositionMs: Long,
+    positionState: State<Long>,
     durationMs: Long,
     playbackMode: PlaybackMode,
     albumArtMode: AlbumArtMode = AlbumArtMode.STATIC,
@@ -122,6 +122,8 @@ fun PlayerSheet(
 ) {
     val context = LocalContext.current
     val hapticFeedback = LocalHapticFeedback.current
+    // Solo el PlayerSheet (visible encima de todo) consume la posicion en vivo.
+    val currentPositionMs = positionState.value
 
     var dominantColor by remember { mutableStateOf(Color(0xFF1A1A1A)) }
     var accentColor by remember { mutableStateOf(Color(0xFF4A90D9)) }

@@ -94,7 +94,6 @@ import com.example.rewind1137.utils.ThumbnailPrefetcher
 import com.example.rewind1137.viewmodel.LibraryFilter
 import com.example.rewind1137.viewmodel.LibraryUiState
 import com.example.rewind1137.viewmodel.NowPlayingAnimation
-import com.example.rewind1137.viewmodel.PlayerUiState
 import com.example.rewind1137.viewmodel.SortOption
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.filterNotNull
@@ -102,7 +101,8 @@ import kotlinx.coroutines.flow.filterNotNull
 @Composable
 fun LibraryGrid(
     libraryUiState: LibraryUiState,
-    playerUiState: PlayerUiState,
+    currentSongId: Long?,
+    isPlaying: Boolean,
     gridColumns: Int,
     onCompactListChange: (Boolean) -> Unit = { _ -> },
     onPlaySongAtIndex: (Int) -> Unit,
@@ -134,37 +134,45 @@ fun LibraryGrid(
         onDispose { onSelectionModeChange(false) }
     }
 
-    // Precarga de portadas: primero la ventana visible y lo que viene encima,
-    // y despues el resto en segundo plano. Con esto la cuadricula de 5 columnas
-    // se desplaza sin cargas visibles.
+    // Precarga de portadas: solo la ventana visible y un margen por delante.
+    // Antes se encolaba la biblioteca completa y los hilos de decodificación
+    // competían con la interfaz durante todo el desplazamiento.
     LaunchedEffect(isGridView, libraryUiState.filteredSongs) {
         val songs = libraryUiState.filteredSongs
         if (songs.isEmpty()) return@LaunchedEffect
 
-        // Se precarga toda la biblioteca en segundo plano (la ventana visible
-        // siempre tiene prioridad), asi el desplazamiento rapido no encuentra
-        // portadas sin decodificar.
-        ThumbnailPrefetcher.prefetch(context, songs, highPriority = false)
+        // El resto de la biblioteca se decodifica solo cuando la interfaz está
+        // quieta (ver ThumbnailPrefetcher.prefetchIdle).
+        ThumbnailPrefetcher.prefetchIdle(context, songs)
 
-        snapshotFlow<Pair<Int, Int>?> {
+        snapshotFlow<IntRange?> {
             if (isGridView) {
                 val visible = gridState.layoutInfo.visibleItemsInfo
-                if (visible.isEmpty()) null else visible.first().index to visible.last().index
+                if (visible.isEmpty()) {
+                    null
+                } else {
+                    val from = (visible.first().index - 5).coerceAtLeast(0)
+                    val to = (visible.last().index + 30).coerceAtMost(songs.lastIndex)
+                    from..to
+                }
             } else {
                 val visible = listState.layoutInfo.visibleItemsInfo
-                if (visible.isEmpty()) null else visible.first().index to visible.last().index
+                if (visible.isEmpty()) {
+                    null
+                } else {
+                    val from = (visible.first().index - 5).coerceAtLeast(0)
+                    val to = (visible.last().index + 25).coerceAtMost(songs.lastIndex)
+                    from..to
+                }
             }
         }
             .filterNotNull()
             .distinctUntilChanged()
             .collect { range ->
-                val from = (range.first - 10).coerceAtLeast(0)
-                val to = (range.second + 40).coerceAtMost(songs.lastIndex)
-                if (from <= to) {
+                if (range.first <= range.last) {
                     ThumbnailPrefetcher.prefetch(
                         context = context,
-                        songs = songs.subList(from, to + 1),
-                        highPriority = true
+                        songs = songs.subList(range.first, range.last + 1)
                     )
                 }
             }
@@ -225,7 +233,7 @@ fun LibraryGrid(
                     items(libraryUiState.filteredSongs.size, key = { libraryUiState.filteredSongs[it].id }) { index ->
                         val song = libraryUiState.filteredSongs[index]
                         val isSelected = song.id in selectedSongs
-                        val isCurrent = song.id == playerUiState.currentSong?.id
+                        val isCurrent = song.id == currentSongId
                         val itemLongClick = remember(song.id, isSelected) {
                             {
                                 hapticFeedback.performHapticFeedback(HapticFeedbackType.TextHandleMove)
@@ -247,7 +255,7 @@ fun LibraryGrid(
                             isSelected = isSelected,
                             isMultiSelectMode = isMultiSelectMode,
                             isCurrentSong = isCurrent,
-                            isPlaying = playerUiState.isPlaying,
+                            isPlaying = isPlaying,
                             nowPlayingAnimation = nowPlayingAnimation,
                             onLongClick = itemLongClick,
                             onClick = itemClick
@@ -264,7 +272,7 @@ fun LibraryGrid(
                     items(libraryUiState.filteredSongs.size, key = { libraryUiState.filteredSongs[it].id }) { index ->
                         val song = libraryUiState.filteredSongs[index]
                         val isSelected = song.id in selectedSongs
-                        val isCurrent = song.id == playerUiState.currentSong?.id
+                        val isCurrent = song.id == currentSongId
                         val itemLongClick = remember(song.id, isSelected) {
                             {
                                 hapticFeedback.performHapticFeedback(HapticFeedbackType.TextHandleMove)
@@ -287,7 +295,7 @@ fun LibraryGrid(
                                 isCompact = compactList,
                                 isMultiSelectMode = isMultiSelectMode,
                                 isCurrentSong = isCurrent,
-                                isPlaying = playerUiState.isPlaying,
+                                isPlaying = isPlaying,
                                 isSelected = isSelected,
                                 nowPlayingAnimation = nowPlayingAnimation,
                                 onLongClick = itemLongClick,
@@ -618,11 +626,16 @@ fun LibraryGridItem(
                 modifier = Modifier
                     .fillMaxWidth()
                     .aspectRatio(1f)
-                    .graphicsLayer {
-                        val s = 1f - 0.04f * selectionProgress
-                        scaleX = s
-                        scaleY = s
-                    },
+                    .then(
+                        // La capa de escala solo existe en modo selección; en el
+                        // uso normal cada celda se dibuja directo (menos capas y
+                        // menos trabajo por fotograma al desplazar).
+                        if (isMultiSelectMode) Modifier.graphicsLayer {
+                            val s = 1f - 0.04f * selectionProgress
+                            scaleX = s
+                            scaleY = s
+                        } else Modifier
+                    ),
                 songId = song.id,
                 contentUri = song.uri,
                 dateModified = song.dateAdded

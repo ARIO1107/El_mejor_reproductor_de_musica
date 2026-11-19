@@ -1,27 +1,38 @@
 package com.example.rewind1137.ui.components
 
+import android.graphics.Bitmap
+import android.graphics.Canvas
+import android.graphics.LinearGradient
+import android.graphics.Paint
+import android.graphics.RadialGradient
+import android.graphics.Shader
 import android.net.Uri
-import androidx.compose.animation.animateColorAsState
+import androidx.compose.animation.Crossfade
 import androidx.compose.animation.core.tween
-import androidx.compose.foundation.Canvas
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.runtime.*
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.blur
-import androidx.compose.ui.geometry.Offset
-import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.ImageBitmap
+import androidx.compose.ui.graphics.asImageBitmap
+import androidx.compose.ui.graphics.toArgb
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.unit.dp
 import androidx.palette.graphics.Palette
-import coil.ImageLoader
-import coil.imageLoader
 import coil.request.ImageRequest
 import coil.request.SuccessResult
 import coil.size.Precision
+import coil.imageLoader
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 
@@ -73,51 +84,99 @@ fun DynamicBackground(
         }
     }
 
-    val animatedDom by animateColorAsState(targetValue = dominantColor, animationSpec = tween(1000), label = "dom")
-    val animatedVib by animateColorAsState(targetValue = vibrantColor, animationSpec = tween(1000), label = "vib")
-
-    Box(
+    BoxWithConstraints(
         modifier = modifier
             .fillMaxSize()
             .background(baseColor)
     ) {
-        Canvas(
-            modifier = Modifier
-                .fillMaxSize()
-                .blur(radius = 70.dp)
-        ) {
-            drawRect(
-                brush = Brush.radialGradient(
-                    colors = listOf(animatedVib.copy(alpha = 0.30f), Color.Transparent),
-                    center = Offset(size.width * 0.2f, size.height * 0.2f),
-                    radius = size.width * 0.9f
-                )
-            )
-            drawRect(
-                brush = Brush.radialGradient(
-                    colors = listOf(animatedDom.copy(alpha = 0.30f), Color.Transparent),
-                    center = Offset(size.width * 0.8f, size.height * 0.4f),
-                    radius = size.width * 1.1f
-                )
+        val widthPx = constraints.maxWidth.coerceAtLeast(1)
+        val heightPx = constraints.maxHeight.coerceAtLeast(1)
+        // El fondo se rasteriza UNA vez por canción en vez de pintar dos
+        // degradados radiales a pantalla completa en cada fotograma. Antes el
+        // GPU tardaba ~12 ms por fotograma solo en el fondo, así que la
+        // cuadrícula no podía mantener 60 fps al desplazarse.
+        val background = remember(vibrantColor, dominantColor, baseColor, widthPx, heightPx) {
+            renderBackgroundBitmap(
+                vibrant = vibrantColor,
+                dominant = dominantColor,
+                base = baseColor,
+                widthPx = widthPx,
+                heightPx = heightPx
             )
         }
 
-        Box(
-            modifier = Modifier
-                .fillMaxSize()
-                .background(
-                    Brush.verticalGradient(
-                        colors = listOf(
-                            Color.Transparent,
-                            baseColor.copy(alpha = 0.55f),
-                            baseColor
-                        )
-                    )
-                )
-        )
+        Crossfade(
+            targetState = background,
+            animationSpec = tween(durationMillis = 450),
+            label = "dynamicBackground"
+        ) { bitmap ->
+            Image(
+                bitmap = bitmap,
+                contentDescription = null,
+                contentScale = ContentScale.FillBounds,
+                modifier = Modifier.fillMaxSize()
+            )
+        }
     }
 }
 
-private fun Color.toArgb(): Int {
-    return (this.value shr 32).toInt()
+/**
+ * Pinta el degradado ambiental en un bitmap pequeño (1/4 de resolución) y lo
+ * deja listo para dibujarse como textura. Los degradados son suaves, así que al
+ * escalarlos no se nota la pérdida de resolución.
+ */
+private fun renderBackgroundBitmap(
+    vibrant: Color,
+    dominant: Color,
+    base: Color,
+    widthPx: Int,
+    heightPx: Int
+): ImageBitmap {
+    val w = (widthPx / 4).coerceAtLeast(1)
+    val h = (heightPx / 4).coerceAtLeast(1)
+    val bitmap = Bitmap.createBitmap(w, h, Bitmap.Config.ARGB_8888)
+    val canvas = Canvas(bitmap)
+    val paint = Paint(Paint.ANTI_ALIAS_FLAG or Paint.DITHER_FLAG)
+    val transparent = android.graphics.Color.TRANSPARENT
+    val wf = w.toFloat()
+    val hf = h.toFloat()
+
+    canvas.drawColor(base.toArgb())
+
+    paint.shader = RadialGradient(
+        wf * 0.2f,
+        hf * 0.2f,
+        wf * 0.9f,
+        intArrayOf(vibrant.copy(alpha = 0.30f).toArgb(), transparent),
+        null,
+        Shader.TileMode.CLAMP
+    )
+    canvas.drawRect(0f, 0f, wf, hf, paint)
+
+    paint.shader = RadialGradient(
+        wf * 0.8f,
+        hf * 0.4f,
+        wf * 1.1f,
+        intArrayOf(dominant.copy(alpha = 0.30f).toArgb(), transparent),
+        null,
+        Shader.TileMode.CLAMP
+    )
+    canvas.drawRect(0f, 0f, wf, hf, paint)
+
+    paint.shader = LinearGradient(
+        0f,
+        0f,
+        0f,
+        hf,
+        intArrayOf(
+            transparent,
+            base.copy(alpha = 0.55f).toArgb(),
+            base.toArgb()
+        ),
+        floatArrayOf(0f, 0.5f, 1f),
+        Shader.TileMode.CLAMP
+    )
+    canvas.drawRect(0f, 0f, wf, hf, paint)
+
+    return bitmap.asImageBitmap()
 }

@@ -30,7 +30,7 @@ object NotificationGlowUtils {
     // generado para no crear bitmaps nuevos en cada actualización.
     private val glowCache = object : LruCache<Int, Glow>(3) {}
 
-    fun build(art: Bitmap?, width: Int = 480, height: Int = 480): Glow {
+    fun build(art: Bitmap?, width: Int = 256, height: Int = 256): Glow {
         if (art == null) return Glow(null, FALLBACK_ACCENT)
 
         val key = ((System.identityHashCode(art) * 31) + width) * 31 + height

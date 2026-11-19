@@ -29,6 +29,7 @@ import kotlinx.coroutines.launch
 fun MainScreen(
     libraryUiState: LibraryUiState,
     playerUiState: PlayerUiState,
+    positionState: State<Long>,
     currentTab: BottomNavTab,
     onTabSelected: (BottomNavTab) -> Unit,
     onPlaySongAtIndex: (Int) -> Unit,
@@ -116,7 +117,8 @@ fun MainScreen(
                 when (page) {
                     0 -> LibraryGrid(
                         libraryUiState = libraryUiState,
-                        playerUiState = playerUiState,
+                        currentSongId = playerUiState.currentSong?.id,
+                        isPlaying = playerUiState.isPlaying,
                         gridColumns = gridColumns,
                         onCompactListChange = { onCompactListChange(!libraryUiState.isCompactMode) },
                         onPlaySongAtIndex = onPlaySongAtIndex,
@@ -131,7 +133,8 @@ fun MainScreen(
                     )
                     1 -> SearchPage(
                         libraryUiState = libraryUiState,
-                        playerUiState = playerUiState,
+                        currentSongId = playerUiState.currentSong?.id,
+                        isPlaying = playerUiState.isPlaying,
                         onSearchQueryChange = onSearchQueryChange,
                         onPlaySong = onPlaySong,
                         onClearRecentSearches = onClearRecentSearches,
@@ -183,7 +186,7 @@ fun MainScreen(
                         MiniPlayer(
                             song = activeSong!!,
                             isPlaying = playerUiState.isPlaying,
-                            currentPositionMs = playerUiState.currentPositionMs,
+                            positionState = positionState,
                             durationMs = playerUiState.durationMs,
                             playbackMode = playerUiState.playbackMode,
                             onSeek = onSeek,
