@@ -191,54 +191,59 @@ private fun WidgetContentLarge(
         }
 
         if (hasSong && upNext.isNotEmpty()) {
-            Spacer(GlanceModifier.height(8.dp))
-            Row(
-                modifier = GlanceModifier.fillMaxWidth(),
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Text(
-                    text = "A CONTINUACIÓN",
-                    style = TextStyle(
-                        fontSize = 9.sp,
-                        fontWeight = FontWeight.Bold,
-                        color = ColorProvider(R.color.widget_accent)
-                    ),
-                    modifier = GlanceModifier.defaultWeight()
-                )
-                Text(
-                    text = "$queueCount en cola",
-                    style = TextStyle(
-                        fontSize = 9.sp,
-                        color = ColorProvider(R.color.widget_subtext)
-                    )
-                )
-            }
-            Spacer(GlanceModifier.height(4.dp))
-            upNext.take(maxUpNext).forEachIndexed { index, title ->
+            val visibleUpNext = upNext.take(maxUpNext)
+            Column(modifier = GlanceModifier.fillMaxWidth()) {
+                Spacer(GlanceModifier.height(8.dp))
                 Row(
                     modifier = GlanceModifier.fillMaxWidth(),
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     Text(
-                        text = "${index + 1}",
+                        text = "A CONTINUACIÓN",
                         style = TextStyle(
-                            fontSize = 10.sp,
+                            fontSize = 9.sp,
                             fontWeight = FontWeight.Bold,
                             color = ColorProvider(R.color.widget_accent)
                         ),
-                        modifier = GlanceModifier.width(18.dp)
-                    )
-                    Text(
-                        text = title,
-                        maxLines = 1,
-                        style = TextStyle(
-                            fontSize = 11.sp,
-                            color = ColorProvider(R.color.widget_text)
-                        ),
                         modifier = GlanceModifier.defaultWeight()
                     )
+                    Text(
+                        text = "$queueCount en cola",
+                        style = TextStyle(
+                            fontSize = 9.sp,
+                            color = ColorProvider(R.color.widget_subtext)
+                        )
+                    )
                 }
-                Spacer(GlanceModifier.height(2.dp))
+                Spacer(GlanceModifier.height(4.dp))
+                visibleUpNext.forEachIndexed { index, title ->
+                    Row(
+                        modifier = GlanceModifier.fillMaxWidth(),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Text(
+                            text = "${index + 1}",
+                            style = TextStyle(
+                                fontSize = 10.sp,
+                                fontWeight = FontWeight.Bold,
+                                color = ColorProvider(R.color.widget_accent)
+                            ),
+                            modifier = GlanceModifier.width(18.dp)
+                        )
+                        Text(
+                            text = title,
+                            maxLines = 1,
+                            style = TextStyle(
+                                fontSize = 11.sp,
+                                color = ColorProvider(R.color.widget_text)
+                            ),
+                            modifier = GlanceModifier.defaultWeight()
+                        )
+                    }
+                    if (index < visibleUpNext.lastIndex) {
+                        Spacer(GlanceModifier.height(2.dp))
+                    }
+                }
             }
         }
     }
