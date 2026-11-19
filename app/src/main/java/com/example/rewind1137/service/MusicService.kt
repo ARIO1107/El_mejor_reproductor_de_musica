@@ -639,12 +639,13 @@ class MusicService : MediaSessionService() {
         widgetTickJob?.cancel()
         if (!RewindWidgetState.isPlaying) return
         widgetTickJob = serviceScope.launch {
+            val player = MusicPlayerManager.getPlayer(this@MusicService)
             while (isActive) {
-                delay(2000)
-                if (!RewindWidgetState.isPlaying) break
-                RewindWidgetState.run {
-                    progressMs = if (progressMs < durationMs) progressMs + 2000 else 0L
-                }
+                delay(1000)
+                if (!player.isPlaying) break
+                RewindWidgetState.progressMs = player.currentPosition.coerceAtLeast(0L)
+                RewindWidgetState.durationMs = player.duration.coerceAtLeast(0L)
+                RewindWidgetState.save(this@MusicService)
                 RewindWidgetRegistry.updateAll(this@MusicService)
             }
         }
