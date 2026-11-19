@@ -117,19 +117,8 @@ class MainActivity : ComponentActivity() {
             DisposableEffect(Unit) {
                 val noisyReceiver = AudioBecomesNoisyReceiver()
                 val filter = IntentFilter(android.media.AudioManager.ACTION_AUDIO_BECOMING_NOISY)
-                val notifFilter = IntentFilter().apply {
-                    addAction("ACTION_TOGGLE_MODE")
-                }
-                val notifReceiver = object : BroadcastReceiver() {
-                    override fun onReceive(context: Context?, intent: Intent?) {
-                        when (intent?.action) {
-                            "ACTION_TOGGLE_MODE" -> playerViewModel.togglePlaybackMode()
-                        }
-                    }
-                }
 
                 ContextCompat.registerReceiver(context, noisyReceiver, filter, ContextCompat.RECEIVER_NOT_EXPORTED)
-                ContextCompat.registerReceiver(context, notifReceiver, notifFilter, ContextCompat.RECEIVER_NOT_EXPORTED)
 
                 var lastMediaChangeCall = 0L
                 val mediaStoreObserver = object : ContentObserver(Handler(Looper.getMainLooper())) {
@@ -148,7 +137,6 @@ class MainActivity : ComponentActivity() {
 
                 onDispose {
                     try { context.unregisterReceiver(noisyReceiver) } catch (e: Exception) { e.printStackTrace() }
-                    try { context.unregisterReceiver(notifReceiver) } catch (e: Exception) { e.printStackTrace() }
                     try { context.contentResolver.unregisterContentObserver(mediaStoreObserver) } catch (e: Exception) { e.printStackTrace() }
                 }
             }

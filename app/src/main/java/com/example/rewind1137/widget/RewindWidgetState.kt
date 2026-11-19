@@ -184,6 +184,47 @@ object RewindWidgetState {
             .putInt(KEY_QUEUE_COUNT, queueCount)
             .apply()
     }
+
+    /**
+     * Limpia la canción persistida (p. ej. al cerrar el reproductor con X) para que
+     * el widget no muestre una sesión muerta tras reiniciar el proceso.
+     */
+    fun clear(context: Context) {
+        songTitle = "Rewind 1137"
+        songArtist = "Tu musica, tu estilo"
+        songAlbum = ""
+        isPlaying = false
+        hasSong = false
+        progressMs = 0L
+        durationMs = 0L
+        albumArt = null
+        upNext = emptyList()
+        queueCount = 0
+        currentSongId = -1L
+        isFavorite = false
+        playbackMode = PlaybackMode.SEQUENTIAL
+        songUri = null
+        albumArtUri = null
+        initialized = true
+
+        context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+            .edit()
+            .putBoolean(KEY_HAS_STATE, true)
+            .putString(KEY_TITLE, songTitle)
+            .putString(KEY_ARTIST, songArtist)
+            .putString(KEY_ALBUM, songAlbum)
+            .putBoolean(KEY_HAS_SONG, false)
+            .putLong(KEY_PROGRESS, 0L)
+            .putLong(KEY_DURATION, 0L)
+            .putLong(KEY_SONG_ID, -1L)
+            .putBoolean(KEY_FAVORITE, false)
+            .putString(KEY_MODE, PlaybackMode.SEQUENTIAL.name)
+            .remove(KEY_SONG_URI)
+            .remove(KEY_ALBUM_ART_URI)
+            .putString(KEY_UP_NEXT, "")
+            .putInt(KEY_QUEUE_COUNT, 0)
+            .apply()
+    }
 }
 
 fun progressFraction(pos: Long, dur: Long): Float =

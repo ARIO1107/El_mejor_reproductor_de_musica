@@ -31,6 +31,7 @@ import com.example.rewind1137.data.model.Song
 import com.example.rewind1137.utils.AlbumArtUtils
 import com.example.rewind1137.utils.MusicPlayerManager
 import com.example.rewind1137.utils.NotificationGlowUtils
+import com.example.rewind1137.utils.PlaybackModeCycle
 import com.example.rewind1137.utils.SongBitmapLoader
 import com.example.rewind1137.viewmodel.PlaybackMode
 import com.example.rewind1137.viewmodel.PlaybackStateHolder
@@ -560,8 +561,14 @@ class MusicService : MediaSessionService() {
             ACTION_PLAY_PAUSE -> MusicPlayerManager.togglePlayPause()
             ACTION_NEXT -> MusicPlayerManager.skipNext()
             ACTION_PREVIOUS -> MusicPlayerManager.skipPrevious()
-            ACTION_TOGGLE_MODE ->
-                sendBroadcast(Intent("ACTION_TOGGLE_MODE").setPackage(packageName))
+            ACTION_TOGGLE_MODE -> {
+                val nextMode = PlaybackModeCycle.next(playbackStateHolder.state.value.playbackMode)
+                MusicPlayerManager.applyModeFlag(nextMode)
+                playbackStateHolder.update { it.copy(playbackMode = nextMode) }
+                serviceScope.launch {
+                    runCatching { settingsRepository.setPlaybackMode(nextMode) }
+                }
+            }
             ACTION_TOGGLE_FAVORITE -> {
                 val targetId = songId.takeIf { it != -1L }
                     ?: playbackStateHolder.state.value.currentSongId
@@ -590,6 +597,9 @@ class MusicService : MediaSessionService() {
 
     private fun closePlayback() {
         if (MusicPlayerManager.isPlaying()) MusicPlayerManager.togglePlayPause()
+        widgetTickJob?.cancel()
+        RewindWidgetState.clear(this)
+        runBlocking { RewindWidgetRegistry.updateAll(this@MusicService) }
         stopForeground(STOP_FOREGROUND_REMOVE)
         isForegroundStarted = false
         stopSelf()
