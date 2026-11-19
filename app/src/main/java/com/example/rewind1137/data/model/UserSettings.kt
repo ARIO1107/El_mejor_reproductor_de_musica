@@ -19,5 +19,6 @@ data class UserSettings(
     val bassBoostEnabled: Boolean = false,
     val virtualizerEnabled: Boolean = false,
     val albumArtMode: AlbumArtMode = AlbumArtMode.STATIC,
-    val nowPlayingAnimation: NowPlayingAnimation = NowPlayingAnimation.BARS
+    val nowPlayingAnimation: NowPlayingAnimation = NowPlayingAnimation.BARS,
+    val hifiModeEnabled: Boolean = false
 )
