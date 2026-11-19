@@ -22,6 +22,7 @@ import com.example.rewind1137.data.model.Song
 import com.example.rewind1137.data.model.UserSettings
 import com.example.rewind1137.service.MusicService
 import com.example.rewind1137.utils.MusicPlayerManager
+import com.example.rewind1137.utils.PlaybackModeCycle
 import com.example.rewind1137.utils.SleepTimerManager
 import com.example.rewind1137.utils.SleepTimerOption
 import com.example.rewind1137.utils.SongMediaExtras
@@ -452,11 +453,7 @@ class PlayerViewModel @Inject constructor(
     }
 
     fun togglePlaybackMode() {
-        val nextMode = when (_uiState.value.playbackMode) {
-            PlaybackMode.SEQUENTIAL -> PlaybackMode.SHUFFLE
-            PlaybackMode.SHUFFLE -> PlaybackMode.REPEAT_ONE
-            PlaybackMode.REPEAT_ONE -> PlaybackMode.SEQUENTIAL
-        }
+        val nextMode = PlaybackModeCycle.next(_uiState.value.playbackMode)
         val currentSong = _uiState.value.currentSong
         val source = if (unshuffledQueue.isNotEmpty()) unshuffledQueue else _uiState.value.displayQueue
         if (unshuffledQueue.isEmpty()) {
