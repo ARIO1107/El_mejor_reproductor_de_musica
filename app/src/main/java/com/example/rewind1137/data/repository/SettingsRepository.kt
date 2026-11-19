@@ -50,6 +50,7 @@ class SettingsRepository(private val context: Context) {
         val PLAYBACK_MODE = stringPreferencesKey("playback_mode")
         val LIBRARY_SORT_OPTION = stringPreferencesKey("library_sort_option")
         val LIBRARY_FILTER = stringPreferencesKey("library_filter")
+        val HIFI_MODE_ENABLED = booleanPreferencesKey("hifi_mode_enabled")
     }
 
     val userSettingsFlow: Flow<UserSettings> = context.dataStore.data.map { preferences ->
@@ -84,6 +85,7 @@ class SettingsRepository(private val context: Context) {
         } catch (e: Exception) {
             NowPlayingAnimation.BARS
         }
+        val hifiModeEnabled = preferences[PreferencesKeys.HIFI_MODE_ENABLED] ?: false
 
         UserSettings(
             excludeShortAudios = excludeClips,
@@ -101,7 +103,8 @@ class SettingsRepository(private val context: Context) {
             bassBoostEnabled = bassBoostEnabled,
             virtualizerEnabled = virtualizerEnabled,
             albumArtMode = albumArtMode,
-            nowPlayingAnimation = nowPlayingAnimation
+            nowPlayingAnimation = nowPlayingAnimation,
+            hifiModeEnabled = hifiModeEnabled
         )
     }
 
@@ -212,6 +215,12 @@ class SettingsRepository(private val context: Context) {
     suspend fun setReplayGainPreamp(preamp: Float) {
         context.dataStore.edit { preferences ->
             preferences[PreferencesKeys.REPLAY_GAIN_PREAMP] = preamp
+        }
+    }
+
+    suspend fun setHifiMode(enabled: Boolean) {
+        context.dataStore.edit { preferences ->
+            preferences[PreferencesKeys.HIFI_MODE_ENABLED] = enabled
         }
     }
 
@@ -432,6 +441,7 @@ class SettingsRepository(private val context: Context) {
             put("crossfadeSeconds", settings.crossfadeSeconds)
             put("replayGainEnabled", settings.replayGainEnabled)
             put("replayGainPreamp", settings.replayGainPreamp.toDouble())
+            put("hifiModeEnabled", settings.hifiModeEnabled)
             put("albumArtMode", settings.albumArtMode.name)
             put("nowPlayingAnimation", settings.nowPlayingAnimation.name)
             put("playbackMode", playbackMode.name)
@@ -471,6 +481,7 @@ class SettingsRepository(private val context: Context) {
             if (json.has("crossfadeSeconds")) preferences[PreferencesKeys.CROSSFADE_SECONDS] = json.getInt("crossfadeSeconds")
             if (json.has("replayGainEnabled")) preferences[PreferencesKeys.REPLAY_GAIN_ENABLED] = json.getBoolean("replayGainEnabled")
             if (json.has("replayGainPreamp")) preferences[PreferencesKeys.REPLAY_GAIN_PREAMP] = json.getDouble("replayGainPreamp").toFloat()
+            if (json.has("hifiModeEnabled")) preferences[PreferencesKeys.HIFI_MODE_ENABLED] = json.getBoolean("hifiModeEnabled")
             if (json.has("excludeShortClips")) preferences[PreferencesKeys.EXCLUDE_SHORT_CLIPS] = json.getBoolean("excludeShortClips")
             if (json.has("albumArtMode")) preferences[PreferencesKeys.ALBUM_ART_MODE] = json.getString("albumArtMode")
             if (json.has("nowPlayingAnimation")) preferences[PreferencesKeys.NOW_PLAYING_ANIMATION] = json.getString("nowPlayingAnimation")

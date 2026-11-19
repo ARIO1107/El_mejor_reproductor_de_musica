@@ -96,6 +96,10 @@ class SettingsViewModel @Inject constructor(
         viewModelScope.launch { settingsRepository.setReplayGainPreamp(preamp) }
     }
 
+    fun setHifiMode(enabled: Boolean) {
+        viewModelScope.launch { settingsRepository.setHifiMode(enabled) }
+    }
+
     fun clearAppCache(context: Context) {
         viewModelScope.launch {
             try {

@@ -42,4 +42,7 @@
     <string name="widget_media_desc">Controla la rewindducción de Rewind 1137</string>
     <string name="widget_compact_desc">Rewind 1137: canción actual</string>
     <string name="widget_large_desc">Rewind 1137: rewindductor grande</string>
+
+    <string name="hifi_mode_title">Modo HiFi (sin procesar)</string>
+    <string name="hifi_mode_subtitle">Desactiva ecualizador, graves, virtualizador y eliminación de voz; activa ReplayGain. No iguala los másteres de Tidal/Qobuz.</string>
 </resources>

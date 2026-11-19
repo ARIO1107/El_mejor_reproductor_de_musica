@@ -59,6 +59,7 @@ fun SettingsScreen(
     onOpenSleepTimerClick: () -> Unit = {},
     onCrossfadeChange: (Int) -> Unit = {},
     onReplayGainChange: (Boolean) -> Unit = {},
+    onHifiModeChange: (Boolean) -> Unit = {},
     onExportBackup: () -> Unit = {},
     onImportBackup: (Uri) -> Unit = {},
     backupStatus: String? = null,
@@ -275,6 +276,33 @@ fun SettingsScreen(
                         onReplayGainChange(it)
                         com.example.rewind1137.utils.MusicPlayerManager.setReplayGain(it)
                     }
+                )
+            }
+
+            // Modo HiFi transparente
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 16.dp, vertical = 8.dp),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.SpaceBetween
+            ) {
+                Column(modifier = Modifier.weight(1f)) {
+                    Text(
+                        text = androidx.compose.ui.res.stringResource(com.example.rewind1137.R.string.hifi_mode_title),
+                        fontSize = 14.sp,
+                        fontWeight = FontWeight.Medium,
+                        color = MaterialTheme.colorScheme.onBackground
+                    )
+                    Text(
+                        text = androidx.compose.ui.res.stringResource(com.example.rewind1137.R.string.hifi_mode_subtitle),
+                        fontSize = 11.sp,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
+                Switch(
+                    checked = userSettings.hifiModeEnabled,
+                    onCheckedChange = onHifiModeChange
                 )
             }
 

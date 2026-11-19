@@ -404,6 +404,7 @@ fun AppNavGraph(
                     com.example.rewind1137.utils.MusicPlayerManager.setCrossfadeDuration(seconds)
                 },
                 onReplayGainChange = { settingsViewModel.setReplayGain(it) },
+                onHifiModeChange = { settingsViewModel.setHifiMode(it) },
                 onExportBackup = { settingsViewModel.exportBackup(navController.context) },
                 onImportBackup = { settingsViewModel.importBackup(navController.context, it) },
                 backupStatus = settingsUiState.backupStatus,
