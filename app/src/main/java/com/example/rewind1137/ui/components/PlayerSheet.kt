@@ -1192,7 +1192,7 @@ imageVector = when (playbackMode) {
                     )
                 }
                 IconButton(
-                    onClick = { showSongInfo = true },
+                    onClick = onAudioInfoClick,
                     modifier = Modifier
                         .size(44.dp)
                         .semantics { contentDescription = "Ver información" }
@@ -1236,13 +1236,6 @@ imageVector = when (playbackMode) {
             }
 
             Spacer(modifier = Modifier.height(8.dp))
-        }
-
-        if (showSongInfo && song != null) {
-            AudioInfoDialog(
-                song = song,
-                onDismiss = { showSongInfo = false }
-            )
         }
 
         val lyricsBgLuminance = animatedDom.luminance() * 0.85f + sheetBg.luminance() * 0.15f

@@ -51,6 +51,7 @@ import androidx.activity.result.IntentSenderRequest
 import androidx.activity.result.contract.ActivityResultContracts
 import com.example.rewind1137.R
 import com.example.rewind1137.data.model.Song
+import com.example.rewind1137.ui.components.AudioInfoDialog
 import com.example.rewind1137.ui.components.BottomNavTab
 import com.example.rewind1137.ui.components.PlayerSheet
 import com.example.rewind1137.ui.screens.FolderScreen
@@ -60,12 +61,16 @@ import com.example.rewind1137.ui.screens.QueueScreen
 import com.example.rewind1137.ui.screens.SettingsScreen
 import com.example.rewind1137.ui.screens.TagEditorScreen
 import com.example.rewind1137.ui.screens.ThemeScreen
+import com.example.rewind1137.utils.AudioFormatInfo
+import com.example.rewind1137.utils.AudioFormatReader
 import com.example.rewind1137.utils.SleepTimerManager
 import com.example.rewind1137.utils.SleepTimerOption
 import com.example.rewind1137.viewmodel.LibraryViewModel
 import com.example.rewind1137.viewmodel.PlayerViewModel
 import com.example.rewind1137.viewmodel.SettingsViewModel
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 
 @Composable
 fun AppNavGraph(
@@ -322,34 +327,57 @@ fun AppNavGraph(
 
         composableWithSlideUpTransition(Screen.Player.route) {
             val currentSong = playerUiState.currentSong
-            PlayerSheet(
-                song = currentSong,
-                isPlaying = playerUiState.isPlaying,
-                positionState = positionState,
-                durationMs = playerUiState.durationMs,
-                playbackMode = playerUiState.playbackMode,
-                albumArtMode = settingsUiState.userSettings.albumArtMode,
-                onAlbumArtModeChange = { settingsViewModel.setAlbumArtMode(it) },
-                isFavorite = currentSong?.let { libraryUiState.favoriteSongIds.contains(it.id) } ?: false,
-                onDismiss = { navController.popBackStack() },
-                onSeek = { playerViewModel.seekTo(it) },
-                onPlayPauseClick = { playerViewModel.togglePlayPause() },
-                onPreviousClick = { playerViewModel.skipPrevious() },
-                onNextClick = { playerViewModel.skipNext() },
-                onTogglePlaybackMode = { playerViewModel.togglePlaybackMode() },
-                onToggleFavorite = { currentSong?.let { song -> libraryViewModel.toggleFavorite(song.id) } },
-                onAddToPlaylistClick = { currentSong?.let { song -> songForPlaylistDialog = song } },
-                onEqualizerClick = {
-                    currentTab = BottomNavTab.EQUALIZER
-                    navController.popBackStack()
-                },
-                onQueueClick = { navController.navigate(Screen.Queue.route) },
-                onTagEditorClick = { navController.navigate(Screen.TagEditor.route) },
-                onAudioInfoClick = { /* show audio info dialog - handled via state */ },
-                onShareClick = { playerViewModel.shareCurrentSong() },
-                lyricsRaw = playerUiState.lyricsRaw,
-                onSeekToLine = { timeMs -> playerViewModel.seekTo(timeMs) }
-            )
+            val context = LocalContext.current
+            val audioInfoScope = rememberCoroutineScope()
+            var showAudioInfoDialog by remember { mutableStateOf(false) }
+            var audioFormatInfo by remember { mutableStateOf<AudioFormatInfo?>(null) }
+
+            Box(modifier = Modifier.fillMaxSize()) {
+                PlayerSheet(
+                    song = currentSong,
+                    isPlaying = playerUiState.isPlaying,
+                    positionState = positionState,
+                    durationMs = playerUiState.durationMs,
+                    playbackMode = playerUiState.playbackMode,
+                    albumArtMode = settingsUiState.userSettings.albumArtMode,
+                    onAlbumArtModeChange = { settingsViewModel.setAlbumArtMode(it) },
+                    isFavorite = currentSong?.let { libraryUiState.favoriteSongIds.contains(it.id) } ?: false,
+                    onDismiss = { navController.popBackStack() },
+                    onSeek = { playerViewModel.seekTo(it) },
+                    onPlayPauseClick = { playerViewModel.togglePlayPause() },
+                    onPreviousClick = { playerViewModel.skipPrevious() },
+                    onNextClick = { playerViewModel.skipNext() },
+                    onTogglePlaybackMode = { playerViewModel.togglePlaybackMode() },
+                    onToggleFavorite = { currentSong?.let { song -> libraryViewModel.toggleFavorite(song.id) } },
+                    onAddToPlaylistClick = { currentSong?.let { song -> songForPlaylistDialog = song } },
+                    onEqualizerClick = {
+                        currentTab = BottomNavTab.EQUALIZER
+                        navController.popBackStack()
+                    },
+                    onQueueClick = { navController.navigate(Screen.Queue.route) },
+                    onTagEditorClick = { navController.navigate(Screen.TagEditor.route) },
+                    onAudioInfoClick = {
+                        val song = currentSong ?: return@PlayerSheet
+                        audioInfoScope.launch {
+                            val info = withContext(Dispatchers.IO) {
+                                AudioFormatReader.read(context, song)
+                            }
+                            audioFormatInfo = info
+                            showAudioInfoDialog = true
+                        }
+                    },
+                    onShareClick = { playerViewModel.shareCurrentSong() },
+                    lyricsRaw = playerUiState.lyricsRaw,
+                    onSeekToLine = { timeMs -> playerViewModel.seekTo(timeMs) }
+                )
+
+                if (showAudioInfoDialog && audioFormatInfo != null) {
+                    AudioInfoDialog(
+                        info = audioFormatInfo!!,
+                        onDismiss = { showAudioInfoDialog = false }
+                    )
+                }
+            }
         }
 
         composableWithSlideTransition(Screen.Queue.route) {
@@ -503,6 +531,11 @@ fun AppNavGraph(
         ) + fadeOut(animationSpec = tween(180)),
         modifier = Modifier.fillMaxSize()
     ) {
+        val context = LocalContext.current
+        val audioInfoScope = rememberCoroutineScope()
+        var showAudioInfoDialog by remember { mutableStateOf(false) }
+        var audioFormatInfo by remember { mutableStateOf<AudioFormatInfo?>(null) }
+
         Box(modifier = Modifier.fillMaxSize()) {
             PlayerSheet(
                 song = activeSong,
@@ -533,12 +566,28 @@ fun AppNavGraph(
                     navController.navigate(Screen.TagEditor.route)
                     playerViewModel.setPlayerSheetExpanded(false)
                 },
-                onAudioInfoClick = { /* show audio info dialog - handled via state */ },
+                onAudioInfoClick = {
+                    val song = activeSong ?: return@PlayerSheet
+                    audioInfoScope.launch {
+                        val info = withContext(Dispatchers.IO) {
+                            AudioFormatReader.read(context, song)
+                        }
+                        audioFormatInfo = info
+                        showAudioInfoDialog = true
+                    }
+                },
                 onShareClick = { playerViewModel.shareCurrentSong() },
                 lyricsRaw = playerUiState.lyricsRaw,
                 onSeekToLine = { timeMs -> playerViewModel.seekTo(timeMs) },
                 audioSessionId = playerUiState.audioSessionId
             )
+
+            if (showAudioInfoDialog && audioFormatInfo != null) {
+                AudioInfoDialog(
+                    info = audioFormatInfo!!,
+                    onDismiss = { showAudioInfoDialog = false }
+                )
+            }
         }
     }
 }
